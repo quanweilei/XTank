@@ -22,6 +22,7 @@ public class XTankUI
 	private int directionY = -10;
 	private int color;
 	private int gun;
+	private int id;
 
 	private Canvas canvas;
 	private Display display;
@@ -33,10 +34,11 @@ public class XTankUI
 
 	private Command moveHandler;
 	
-	public XTankUI(DataInputStream in, DataOutputStream out)
+	public XTankUI(DataInputStream in, DataOutputStream out, int id)
 	{
 		this.in = in;
 		this.out = out;
+		this.id = id;
 		color = SWT.COLOR_DARK_GREEN;
 		gun = SWT.COLOR_BLACK;
 		ser = Serializer.getInstance();
@@ -79,9 +81,8 @@ public class XTankUI
 				x += directionX;
 				y += directionY;
 				try {
-					ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionY, directionX);
+					ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionY, directionX, id);
 					out.write(ser.obToByte(obj));
-					System.out.println(ser.obToByte(obj).length);
 				}
 				catch(IOException ex) {
 					System.out.println("The server did not respond (write KL).");
@@ -93,7 +94,7 @@ public class XTankUI
 		});
 
 		try {
-			ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionY, directionX);
+			ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionY, directionX, id);
 			System.out.println(ser.obToByte(obj).length);
 			out.write(ser.obToByte(obj));
 		}
@@ -119,11 +120,13 @@ public class XTankUI
 			try {
 				if (in.available() > 0)
 				{
+					ObjectSerialize obj = ser.byteToOb(in.readNBytes(151));
+					System.out.println(obj.toString());
 					System.out.println("\n");
 					canvas.redraw();
 				}
 			}
-			catch(IOException ex) {
+			catch(IOException | ClassNotFoundException ex) {
 				System.out.println("The server did not respond (async).");
 			}				
             display.timerExec(150, this);

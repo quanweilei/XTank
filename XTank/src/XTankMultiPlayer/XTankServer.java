@@ -21,8 +21,8 @@ import java.util.Map;
 public class XTankServer 
 {
 	static ArrayList<DataOutputStream> sq;
-    static HashMap<Socket, HashMap<Integer, Integer>> coords;
     private static Serializer ser;
+    private static HashMap<Integer, ObjectSerialize> objects;
     private static int id;
 
 	
@@ -31,7 +31,8 @@ public class XTankServer
 		System.out.println(InetAddress.getLocalHost());
 		sq = new ArrayList<>();
         ser = Serializer.getInstance();
-        id = 1;
+        objects = new HashMap<>();
+        id = 0;
 		
         try (var listener = new ServerSocket(59896)) 
         {
@@ -39,7 +40,11 @@ public class XTankServer
             var pool = Executors.newFixedThreadPool(20);
             while (true) 
             {
-                pool.execute(new XTankManager(listener.accept()));
+                Socket curr = listener.accept();
+                curr.getOutputStream().write(id);
+                id++;
+                curr.getOutputStream().flush();
+                pool.execute(new XTankManager(curr));
             }
         }
     }
@@ -59,15 +64,19 @@ public class XTankServer
             	DataInputStream in = new DataInputStream(socket.getInputStream());
             	DataOutputStream out = new DataOutputStream(socket.getOutputStream());
                 sq.add(out);
-                
+
                 while (true)
                 {   
-                    ObjectSerialize obj = ser.byteToOb(in.readNBytes(157));
-                    System.out.println(obj.toString());
+                    ObjectSerialize obj = ser.byteToOb(in.readNBytes(151));
+                    objects.put(obj.id, obj);
+                    System.out.println(objects);
                 	
                 	for (DataOutputStream o: sq)
                 	{
-                        o.flush();
+                        for (Integer id: objects.keySet()) {
+                            o.write(ser.obToByte(objects.get(id)));
+                            o.flush();
+                        }
                 	}
                 }
             } 

@@ -15,7 +15,9 @@ public class XTank
         {
         	DataInputStream in = new DataInputStream(socket.getInputStream());
         	DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-            var ui = new XTankUI(in, out);
+            int id = in.read();
+            System.out.println(id);
+            var ui = new XTankUI(in, out, id);
             ui.start();
         }
     }
