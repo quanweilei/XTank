@@ -5,6 +5,10 @@ import org.eclipse.swt.events.*;
 import org.eclipse.swt.graphics.*;
 import org.eclipse.swt.layout.*;
 import org.eclipse.swt.widgets.*;
+
+import Serializer.ObjectSerialize;
+import Serializer.Serializer;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -16,6 +20,8 @@ public class XTankUI
 	private int y = 500;
 	private int directionX = 0;
 	private int directionY = -10;
+	private int color;
+	private int gun;
 
 	private Canvas canvas;
 	private Display display;
@@ -23,12 +29,17 @@ public class XTankUI
 	DataInputStream in; 
 	DataOutputStream out;
 
+	private Serializer ser;
+
 	private Command moveHandler;
 	
 	public XTankUI(DataInputStream in, DataOutputStream out)
 	{
 		this.in = in;
 		this.out = out;
+		color = SWT.COLOR_DARK_GREEN;
+		gun = SWT.COLOR_BLACK;
+		ser = Serializer.getInstance();
 		//moveHandler = Movement.get();
 	}
 	
@@ -36,12 +47,13 @@ public class XTankUI
 	{
 		display = new Display();
 		Shell shell = new Shell(display);
+
 		shell.setText("xtank");
 		shell.setLayout(new FillLayout());
 
 		canvas = new Canvas(shell, SWT.NO_BACKGROUND);
 
-		canvas.addPaintListener(event -> {
+		this.canvas.addPaintListener(event -> {
 			event.gc.fillRectangle(canvas.getBounds());
 			event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_DARK_GREEN));
 			event.gc.fillRectangle(x, y, 50, 100);
@@ -66,10 +78,10 @@ public class XTankUI
 				//moveHandler.set(e);
 				x += directionX;
 				y += directionY;
-
 				try {
-					out.writeInt(y);
-					out.writeInt(x);
+					ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionY, directionX);
+					out.write(ser.obToByte(obj));
+					System.out.println(ser.obToByte(obj).length);
 				}
 				catch(IOException ex) {
 					System.out.println("The server did not respond (write KL).");
@@ -81,11 +93,13 @@ public class XTankUI
 		});
 
 		try {
-			out.writeInt(y);
-			out.writeInt(x);
+			ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionY, directionX);
+			System.out.println(ser.obToByte(obj).length);
+			out.write(ser.obToByte(obj));
 		}
 		catch(IOException ex) {
 			System.out.println("The server did not respond (initial write).");
+			System.out.println(ex);
 		}				
 		Runnable runnable = new Runner();
 		display.asyncExec(runnable);
@@ -105,15 +119,6 @@ public class XTankUI
 			try {
 				if (in.available() > 0)
 				{
-					y = in.readInt();
-					x = in.readInt();
-					//directionX = in.readInt();
-					//directionY = in.readInt();
-					// PRINT OUT TEST COORDINATES
-					System.out.println("y = " + y);
-					System.out.println("x = " + x);
-					//System.out.println("dirX = " + directionX);
-					//System.out.println("dirY = " + directionY);
 					System.out.println("\n");
 					canvas.redraw();
 				}
@@ -124,6 +129,14 @@ public class XTankUI
             display.timerExec(150, this);
 		}
 	};	
+
+	public void setColor(int color) {
+		this.color = color;
+	}
+
+	public void setGun(int gun) {
+		this.gun = gun;
+	}
 }
 
 

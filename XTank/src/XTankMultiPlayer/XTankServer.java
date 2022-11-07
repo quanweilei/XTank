@@ -4,6 +4,10 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.Executors;
+
+import Serializer.ObjectSerialize;
+import Serializer.Serializer;
+
 import java.net.InetAddress;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -18,12 +22,16 @@ public class XTankServer
 {
 	static ArrayList<DataOutputStream> sq;
     static HashMap<Socket, HashMap<Integer, Integer>> coords;
+    private static Serializer ser;
+    private static int id;
+
 	
     public static void main(String[] args) throws Exception 
     {
 		System.out.println(InetAddress.getLocalHost());
 		sq = new ArrayList<>();
-        coords = new HashMap<>();
+        ser = Serializer.getInstance();
+        id = 1;
 		
         try (var listener = new ServerSocket(59896)) 
         {
@@ -51,18 +59,15 @@ public class XTankServer
             	DataInputStream in = new DataInputStream(socket.getInputStream());
             	DataOutputStream out = new DataOutputStream(socket.getOutputStream());
                 sq.add(out);
-                int ycoord;
-                int xcoord;
-
+                
                 while (true)
-                {
-                	ycoord = in.readInt();
-                    xcoord = in.readInt();
-                	//System.out.println("ycoord = " + ycoord);
+                {   
+                    ObjectSerialize obj = ser.byteToOb(in.readNBytes(157));
+                    System.out.println(obj.toString());
+                	
                 	for (DataOutputStream o: sq)
                 	{
-    					o.writeInt(ycoord);
-                        o.writeInt(xcoord);
+                        o.flush();
                 	}
                 }
             } 
