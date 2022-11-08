@@ -39,10 +39,10 @@ public class XTankUI
 	private Serializer ser;
 
 	private Command moveHandler;
-	private Command fireHandler;
+	private Firing fireHandler;
 
 	private static HashMap<Integer, ObjectSerialize> tanks;
-	private static ArrayList<ObjectSerialize> bullets;
+	private static HashMap<Integer, ObjectSerialize> bullets;
 	
 	
 	public XTankUI(DataInputStream in, DataOutputStream out, int id /* , int startx, int starty*/)
@@ -56,11 +56,11 @@ public class XTankUI
 		gun = SWT.COLOR_BLACK;
 		ser = Serializer.getInstance();
 		moveHandler = Movement.get();
-		fireHandler = Firing.getInstance();
+		fireHandler = (Firing) Firing.getInstance();
 		moveHandler.connect(this);
 		fireHandler.connect(this);
 		tanks = new HashMap<>();
-		bullets = new ArrayList<>();
+		bullets = new HashMap<>();
 		width = 50;
 		height = 100;
 		//moveHandler = Movement.get();
@@ -74,13 +74,12 @@ public class XTankUI
 		shell.setText("xtank");
 		shell.setLayout(new FillLayout());
 
-		canvas = new Canvas(shell, SWT.DOUBLE_BUFFERED);
+		canvas = new Canvas(shell, SWT.NO_BACKGROUND);
 
 		this.canvas.addPaintListener(event -> {
 			// display all tanks
 			event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
 			event.gc.fillRectangle(canvas.getBounds());
-			System.out.println(tanks);
 			for (Integer id: tanks.keySet()) {
 				ObjectSerialize curr = tanks.get(id);
 				int currx = curr.x();
@@ -98,33 +97,31 @@ public class XTankUI
 				int midY = ((2 * curry + cHeight)/2) - 25;
 				event.gc.fillOval(midX, midY, 50, 50);
 				event.gc.setLineWidth(4);
-				System.out.println(curr);
 				event.gc.drawLine(midX + 25, midY + 25, midX + cDirX*7 + 25, midY + cDirY*7 + 25);
 				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
 				event.gc.drawText("Player " + String.valueOf(id), midX, midY + cHeight);
 			}
-			/*
-			for (ObjectSerialize bull: bullets) {
-					int currx = bull.x();
-					int curry = bull.y();
-					int cDirX = bull.dirX();
-					int cDirY = bull.dirY();
-					int cWidth = bull.width();
-					int cHeight = bull.height();
-					int midX = ((2 * currx + cWidth)/2) - 25;
-					int midY = ((2 * curry + cHeight)/2) - 25;
-					event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
-					event.gc.fillOval(midX + cDirX*7 + 25, midY + cDirY*7 + 25, 10, 10);
-					bull.setXY(currx+cDirX, curry+cDirY);
-					event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
-			}
-			*/
 			
+			// Ellie Martin
+			for (Integer b: bullets.keySet()) {
+				ObjectSerialize bull = bullets.get(b);
+				int currx = bull.x();
+				int curry = bull.y();
+				int cDirX = bull.dirX();
+				int cDirY = bull.dirY();
+				int cWidth = bull.width();
+				int cHeight = bull.height();
+				int midX = ((2 * currx + cWidth)/2) - 25;
+				int midY = ((2 * curry + cHeight)/2) - 25;
+				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
+				event.gc.fillOval(midX + cDirX*7 + 25, midY + cDirY*7 + 25, 10, 10);
+				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
+			}
 		});	
 
 		canvas.addMouseListener(new MouseListener() {
 			public void mouseDown(MouseEvent e) {
-				System.out.println("mouseDown in canvas at " + e.x + ", " + e.y);
+				fireHandler.set(e);
 			} 
 			public void mouseUp(MouseEvent e) {} 
 			public void mouseDoubleClick(MouseEvent e) {} 
@@ -132,58 +129,27 @@ public class XTankUI
 
 		canvas.addKeyListener(new KeyListener() {
 			public void keyPressed(KeyEvent e) {
-				moveHandler.set(e);
-				// update tank location
-				try {
-					
-					ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height);
-					out.write(ser.obToByte(obj));
+				if ((e.character == 'f') || (e.character == 'F')){
+					fireHandler.set(e);
 				}
-				catch(IOException ex) {
-					System.out.println("The server did not respond (write KL).");
+				else {
+					moveHandler.set(e);
+					// update tank location
+					try {
+						
+						ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height);
+						out.write(ser.obToByte(obj));
+					}
+					catch(IOException ex) {
+						System.out.println("The server did not respond (write KL).");
+					}
 				}
 
 				canvas.redraw();
 			}
 			public void keyReleased(KeyEvent e) {
-				/*
-				if (e.character == 'f') {
-					ObjectSerialize bullobj = new ObjectSerialize("Bullet", x, y, 
-							color, gun, directionX, directionY, id, width, height);
-					bullets.add(bullobj);
-					try {
-						out.write(ser.obToByte(bullobj));
-					} catch (IOException e1) {
-						System.out.println("The server did not respond (write KL).");
-					}
-				}
-				*/
 			}
 		});
-		
-		/*Ellie Martin: Key listener for firing
-		canvas.addKeyListener(new KeyListener() {
-			@Override
-			public void keyPressed(KeyEvent e) {
-				try {
-					if (e.character == 'f') {
-						ObjectSerialize bullobj = new ObjectSerialize("Bullet", x, y, 
-								color, gun, directionX, directionY, id, width, height);
-						out.write(ser.obToByte(bullobj));
-					}
-				}
-				catch(IOException ex) {
-					System.out.println("The server did not respond (write KL).");
-				}
-				
-			}
-			@Override
-			public void keyReleased(KeyEvent e) {
-				// TODO Auto-generated method stub
-				
-			}
-		});
-		*/
 
 		Menu menuBar, helpMenu, gameRules, tankColor, gunType; 
 		MenuItem helpMenuHeader, helpGetHelpItem, gameRulesHeader;
@@ -293,6 +259,22 @@ public class XTankUI
 		d[1] = directionY;
 		return d;
 	}
+	
+	public int[] getLoc() {
+		int[] d = new int[2];
+		d[0] = x;
+		d[1] = y;
+		return d;
+	}
+	
+	public int getColor() {
+		return this.color;
+	}
+	
+	protected void fired(ObjectSerialize bull) throws IOException {
+		out.write(ser.obToByte(bull));
+		out.flush();
+	}
 
 
 	
@@ -309,9 +291,9 @@ public class XTankUI
 							tanks.put(obj.id(), obj);
 						}
 						
-						//if (obj.name().equals("Bullet")) {
-							//bullets.add(obj);
-						//}
+						if (obj.name().equals("bull")) {
+							bullets.put(obj.id(), obj);
+						}
 					}
 					else {
 						System.out.println("Player " + obj.id() + " Disconnected");

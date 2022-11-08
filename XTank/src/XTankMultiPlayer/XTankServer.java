@@ -28,6 +28,7 @@ public class XTankServer
 	static ArrayList<DataOutputStream> sq;
     private static Serializer ser;
     private static HashMap<Integer, ObjectSerialize> tanks;
+    private static HashMap<Integer, ObjectSerialize> bullets;
     private static HashMap<Socket, Integer> sockets;
     // TODO: implement different spawning, will be done with maze generation
     private static ArrayList<Integer[]> spawnable;
@@ -42,6 +43,7 @@ public class XTankServer
         tanks = new HashMap<>();
         spawnable = new ArrayList<>();
         sockets = new HashMap<>();
+        bullets = new HashMap<>();
         reset = new ObjectSerialize("null", -1, - 1, -1, -1, -1, -1, -1, -1, -1);
 		
         try (var listener = new ServerSocket(59896)) 
@@ -88,15 +90,22 @@ public class XTankServer
             	DataOutputStream out = new DataOutputStream(socket.getOutputStream());
             	mySers.add(out);
                 sq.add(out);
-
                 while (true)
                 {   
                     ObjectSerialize obj = ser.byteToOb(in.readNBytes(176));
                     if (obj.name().contains("Tank")) {
                     	tanks.put(obj.id(), obj);
                     }
+                    // TODO: bullet hitting terrain and other players, need some way to delete bullets
+                    if (obj.name().equals("bull")) {
+                    	if (obj.id() == -1) {
+                    		int i = getBulletID();
+                        	obj.setID(i);
+                        	bullets.put(getBulletID(), obj);
+                    	}
+                    }
                     
-                    System.out.println(tanks);
+                    System.out.println(bullets);
                 	
                 	for (DataOutputStream o: sq)
                 	{
@@ -104,11 +113,17 @@ public class XTankServer
                             o.write(ser.obToByte(tanks.get(j)));
                             o.flush();
                         }
+                        for (Integer c: bullets.keySet()) {
+                        	o.write(ser.obToByte(bullets.get(c)));
+                        	o.flush();
+                        }
                         if (reset.id() != -1) {
                         	System.out.println("LEFT");
                         	o.write(ser.obToByte(reset));
                         }
                         o.flush();
+                        bulletIterate();
+                        Thread.sleep(100);
                 	}
                 }
             } 
@@ -135,6 +150,24 @@ public class XTankServer
         return -1;
     }
     
+    private static void bulletIterate() {
+    	for (int i = 0; i < bullets.size(); i++) {
+    		if (bullets.containsKey(i)) {
+    			ObjectSerialize curr = bullets.get(i);
+        		curr.setXY(curr.x() + curr.dirX() * 1, curr.y() + curr.dirY() * 1);
+    		}
+    	}
+    }
+    
+    private static int getBulletID() {
+    	int i = 0;
+    	while (true) {
+    		if (!bullets.containsKey(i)) {
+    			return i;
+    		}
+    		i++;
+    	}
+    }
 }
 
 
