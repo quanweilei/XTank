@@ -14,6 +14,7 @@ import java.io.DataOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * When a client connects, a new thread is started to handle it.
@@ -23,9 +24,10 @@ public class XTankServer
 	static ArrayList<DataOutputStream> sq;
     private static Serializer ser;
     private static HashMap<Integer, ObjectSerialize> tanks;
+    private static HashMap<Socket, Integer> sockets;
     // TODO: implement different spawning, will be done with maze generation
     private static ArrayList<Integer[]> spawnable;
-    private static int id;
+    private static ObjectSerialize reset;
 
 	
     public static void main(String[] args) throws Exception 
@@ -35,7 +37,8 @@ public class XTankServer
         ser = Serializer.getInstance();
         tanks = new HashMap<>();
         spawnable = new ArrayList<>();
-        id = 0;
+        sockets = new HashMap<>();
+        reset = new ObjectSerialize("null", -1, - 1, -1, -1, -1, -1, -1, -1, -1);
 		
         try (var listener = new ServerSocket(59896)) 
         {
@@ -43,13 +46,22 @@ public class XTankServer
             var pool = Executors.newFixedThreadPool(20);
             while (true) 
             {
+            	reset.setID(-1);
                 Socket curr = listener.accept();
-                curr.getOutputStream().write(id);
-                id++;
-                //curr.getOutputStream().write(startx);
-                //curr.getOutputStream().write(starty);
-                curr.getOutputStream().flush();
-                pool.execute(new XTankManager(curr));
+                int id = getAvailableID();
+                if (id == -1) {
+                    System.out.println("Too many players, denying connection");
+                    curr.close();
+                }
+                else 
+                {
+                    curr.getOutputStream().write(id);
+                    sockets.put(curr, id);
+                    //curr.getOutputStream().write(startx);
+                    //curr.getOutputStream().write(starty);
+                    curr.getOutputStream().flush();
+                    pool.execute(new XTankManager(curr, id));
+                }
             }
         }
     }
@@ -57,22 +69,25 @@ public class XTankServer
     private static class XTankManager implements Runnable 
     {
         private Socket socket;
-
-        XTankManager(Socket socket) { this.socket = socket; }
+        private int id;
+        private ArrayList<DataOutputStream> mySers;
+        
+        XTankManager(Socket socket, int id) { this.socket = socket; this.id = id; mySers = new ArrayList<>();}
 
         @Override
-        public void run() 
+        public synchronized void run() 
         {
             System.out.println("Connected: " + socket);
             try 
             {
             	DataInputStream in = new DataInputStream(socket.getInputStream());
             	DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+            	mySers.add(out);
                 sq.add(out);
 
                 while (true)
                 {   
-                    ObjectSerialize obj = ser.byteToOb(in.readNBytes(151));
+                    ObjectSerialize obj = ser.byteToOb(in.readNBytes(176));
                     if (obj.name().contains("Tank")) {
                         tanks.put(obj.id(), obj);
                     }
@@ -84,6 +99,9 @@ public class XTankServer
                             o.write(ser.obToByte(tanks.get(id)));
                             o.flush();
                         }
+                        o.write(ser.obToByte(reset));
+                        o.flush();
+                        Thread.sleep(20);
                 	}
                 }
             } 
@@ -94,11 +112,20 @@ public class XTankServer
             } 
             finally 
             {
-                try { socket.close(); } 
+                try { reset.setID(id); tanks.remove(id); sq.removeAll(mySers); socket.close(); } 
                 catch (IOException e) {}
                 System.out.println("Closed: " + socket);
             }
         }
+    }
+
+    private static int getAvailableID() {
+        for (int i = 1; i < 21; i++) {
+            if (!tanks.containsKey(i)) {
+                return i;
+            }
+        }
+        return -1;
     }
     
 }

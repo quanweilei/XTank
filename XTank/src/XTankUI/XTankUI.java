@@ -26,6 +26,8 @@ public class XTankUI
 	private int directionY = -10;
 	private int color;
 	private int gun;
+	private int width;
+	private int height;
 	private static int id;
 
 	private Canvas canvas;
@@ -51,7 +53,10 @@ public class XTankUI
 		gun = SWT.COLOR_BLACK;
 		ser = Serializer.getInstance();
 		moveHandler = Movement.get();
+		moveHandler.connect(this);
 		tanks = new HashMap<>();
+		width = 50;
+		height = 100;
 		//moveHandler = Movement.get();
 	}
 	
@@ -63,7 +68,7 @@ public class XTankUI
 		shell.setText("xtank");
 		shell.setLayout(new FillLayout());
 
-		canvas = new Canvas(shell, SWT.NO_BACKGROUND);
+		canvas = new Canvas(shell, SWT.DOUBLE_BUFFERED);
 
 		this.canvas.addPaintListener(event -> {
 			// display all tanks
@@ -76,18 +81,27 @@ public class XTankUI
 				int curry = curr.y();
 				int color = curr.color();
 				int black = curr.gun();
+				int cDirX = curr.dirX();
+				int cDirY = curr.dirY();
+				int cWidth = curr.width();
+				int cHeight = curr.height();
 				event.gc.setBackground(shell.getDisplay().getSystemColor(color));
-				event.gc.fillRectangle(currx, curry, 50, 100);
+				event.gc.fillRectangle(currx, curry, cWidth, cHeight);
 				event.gc.setBackground(shell.getDisplay().getSystemColor(black));
-				event.gc.fillOval(currx, curry+25, 50, 50);
+				int midX = ((2 * currx + cWidth)/2) - 25;
+				int midY = ((2 * curry + cHeight)/2) - 25;
+				event.gc.fillOval(midX, midY, 50, 50);
 				event.gc.setLineWidth(4);
-				event.gc.drawLine(currx+25, curry+25, currx+25, curry-15);
+				System.out.println(curr);
+				event.gc.drawLine(midX + 25, midY + 25, midX + cDirX*7 + 25, midY + cDirY*7 + 25);
+				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
+				event.gc.drawText("Player " + String.valueOf(id), midX, midY + cHeight);
 			}
 		});	
 
 		canvas.addMouseListener(new MouseListener() {
 			public void mouseDown(MouseEvent e) {
-				System.out.println("mouseDown in canvas");
+				System.out.println("mouseDown in canvas at " + e.x + ", " + e.y);
 			} 
 			public void mouseUp(MouseEvent e) {} 
 			public void mouseDoubleClick(MouseEvent e) {} 
@@ -98,10 +112,8 @@ public class XTankUI
 				moveHandler.set(e);
 				// update tank location
 				//moveHandler.set(e);
-				x += directionX;
-				y += directionY;
 				try {
-					ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionY, directionX, id);
+					ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height);
 					out.write(ser.obToByte(obj));
 				}
 				catch(IOException ex) {
@@ -177,7 +189,7 @@ public class XTankUI
 		shell.setMenuBar(menuBar);
 
 		try {
-			ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionY, directionX, id);
+			ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height);
 			System.out.println(ser.obToByte(obj).length);
 			out.write(ser.obToByte(obj));
 		}
@@ -197,19 +209,50 @@ public class XTankUI
 	}
 
 	public void setDir(int dirX,int dirY) {
-		
+		directionX = dirX;
+		directionY = dirY;
+		x += directionX;
+		y += directionY;
 	}
+
+	public void setDimensions(int width, int height) {
+		this.width = width;
+		this.height = height;
+	}
+
+	public int[] getDim() {
+		int[] d = new int[2];
+		d[0] = width;
+		d[1] = height;
+		return d;
+	}
+
+	public int[] getDir() {
+		int[] d = new int[2];
+		d[0] = directionX;
+		d[1] = directionY;
+		return d;
+	}
+
+
 	
 	class Runner implements Runnable
 	{
-		public void run() 
+		public synchronized void run() 
 		{
 			try {
 				if (in.available() > 0)
 				{
-					ObjectSerialize obj = ser.byteToOb(in.readNBytes(151));
-					tanks.put(obj.id(), obj);
-					canvas.redraw();
+					ObjectSerialize obj = ser.byteToOb(in.readNBytes(176));
+					if (!obj.name().equals("null")) {
+						tanks.put(obj.id(), obj);
+						canvas.redraw();
+					}
+					else {
+						if (obj.id() != -1) {
+							tanks.remove(obj.id());
+						}
+					}
 				}
 			}
 			catch(IOException | ClassNotFoundException ex) {
@@ -241,7 +284,7 @@ public class XTankUI
 				public void widgetSelected(SelectionEvent arg0) {
 					System.out.println("Changing tank color to: " + name);
 					color = c;
-					ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionY, directionX, id);
+					ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height);
 					try {
 						out.write(ser.obToByte(obj));
 					} catch (IOException e) {
@@ -274,7 +317,7 @@ public class XTankUI
 				public void widgetSelected(SelectionEvent arg0) {
 					System.out.println("Changing tank gun to: " + name);
 					gun = c;
-					ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionY, directionX, id);
+					ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height);
 					try {
 						out.write(ser.obToByte(obj));
 					} catch (IOException e) {

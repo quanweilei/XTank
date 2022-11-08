@@ -1,7 +1,6 @@
 package Serializer;
 
 import java.io.Serializable;
-
 import javax.print.attribute.PrintServiceAttribute;
 /*
  * Quanwei Lei
@@ -16,9 +15,11 @@ public class ObjectSerialize implements Serializable{
     private int dirX;
     private int dirY;
     private int id;
+    private int width;
+    private int height;
 
 
-    public ObjectSerialize(String name, int x, int y, int color, int gun, int dirX, int dirY, int id) {
+    public ObjectSerialize(String name, int x, int y, int color, int gun, int dirX, int dirY, int id, int width, int height) {
         this.name = name;
         this.x = x;
         this.y = y;
@@ -27,11 +28,13 @@ public class ObjectSerialize implements Serializable{
         this.dirX = dirX;
         this.dirY = dirY;
         this.id = id;
+        this.width = width;
+        this.height = height;
     }
     
     @Override
     public String toString() {
-        return "ID: " + id + ", " + name + " at {" + x + ", " + y + "}";
+        return "ID: " + id + ", " + name + " at {" + x + ", " + y + "}, Dimensions: {" + width + ", " + height + "}, Direction: {" + dirX + ", " + dirY + "}";
     }
 
     public String name() {
@@ -66,7 +69,16 @@ public class ObjectSerialize implements Serializable{
         return this.id;
     }
 
+    public int width() {
+        return this.width;
+    }
 
-
+    public int height() {
+        return this.height;
+    }
+    
+    public void setID(int id) {
+    	this.id = id;
+    }
 
 }
