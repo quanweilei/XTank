@@ -12,6 +12,10 @@ import Serializer.Serializer;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 public class XTankUI
 {
@@ -22,7 +26,7 @@ public class XTankUI
 	private int directionY = -10;
 	private int color;
 	private int gun;
-	private int id;
+	private static int id;
 
 	private Canvas canvas;
 	private Display display;
@@ -33,15 +37,20 @@ public class XTankUI
 	private Serializer ser;
 
 	private Command moveHandler;
+
+	private static HashMap<Integer, ObjectSerialize> tanks;
 	
-	public XTankUI(DataInputStream in, DataOutputStream out, int id)
+	public XTankUI(DataInputStream in, DataOutputStream out, int id /* , int startx, int starty*/)
 	{
 		this.in = in;
 		this.out = out;
 		this.id = id;
+		//x = startx;
+		//y = starty;
 		color = SWT.COLOR_DARK_GREEN;
 		gun = SWT.COLOR_BLACK;
 		ser = Serializer.getInstance();
+		tanks = new HashMap<>();
 		//moveHandler = Movement.get();
 	}
 	
@@ -56,13 +65,21 @@ public class XTankUI
 		canvas = new Canvas(shell, SWT.NO_BACKGROUND);
 
 		this.canvas.addPaintListener(event -> {
+			// display all tanks
+			event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
 			event.gc.fillRectangle(canvas.getBounds());
-			event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_DARK_GREEN));
-			event.gc.fillRectangle(x, y, 50, 100);
-			event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
-			event.gc.fillOval(x, y+25, 50, 50);
-			event.gc.setLineWidth(4);
-			event.gc.drawLine(x+25, y+25, x+25, y-15);
+			System.out.println(tanks);
+			for (Integer id: tanks.keySet()) {
+				ObjectSerialize curr = tanks.get(id);
+				int currx = curr.x();
+				int curry = curr.y();
+				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_DARK_GREEN));
+				event.gc.fillRectangle(currx, curry, 50, 100);
+				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
+				event.gc.fillOval(currx, curry+25, 50, 50);
+				event.gc.setLineWidth(4);
+				event.gc.drawLine(currx+25, curry+25, currx+25, curry-15);
+			}
 		});	
 
 		canvas.addMouseListener(new MouseListener() {
@@ -121,8 +138,7 @@ public class XTankUI
 				if (in.available() > 0)
 				{
 					ObjectSerialize obj = ser.byteToOb(in.readNBytes(151));
-					System.out.println(obj.toString());
-					System.out.println("\n");
+					tanks.put(obj.id(), obj);
 					canvas.redraw();
 				}
 			}

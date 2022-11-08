@@ -22,7 +22,9 @@ public class XTankServer
 {
 	static ArrayList<DataOutputStream> sq;
     private static Serializer ser;
-    private static HashMap<Integer, ObjectSerialize> objects;
+    private static HashMap<Integer, ObjectSerialize> tanks;
+    // TODO: implement different spawning, will be done with maze generation
+    private static ArrayList<Integer[]> spawnable;
     private static int id;
 
 	
@@ -31,7 +33,8 @@ public class XTankServer
 		System.out.println(InetAddress.getLocalHost());
 		sq = new ArrayList<>();
         ser = Serializer.getInstance();
-        objects = new HashMap<>();
+        tanks = new HashMap<>();
+        spawnable = new ArrayList<>();
         id = 0;
 		
         try (var listener = new ServerSocket(59896)) 
@@ -43,6 +46,8 @@ public class XTankServer
                 Socket curr = listener.accept();
                 curr.getOutputStream().write(id);
                 id++;
+                //curr.getOutputStream().write(startx);
+                //curr.getOutputStream().write(starty);
                 curr.getOutputStream().flush();
                 pool.execute(new XTankManager(curr));
             }
@@ -68,13 +73,15 @@ public class XTankServer
                 while (true)
                 {   
                     ObjectSerialize obj = ser.byteToOb(in.readNBytes(151));
-                    objects.put(obj.id, obj);
-                    System.out.println(objects);
+                    if (obj.name().contains("Tank")) {
+                        tanks.put(obj.id(), obj);
+                    }
+                    System.out.println(tanks);
                 	
                 	for (DataOutputStream o: sq)
                 	{
-                        for (Integer id: objects.keySet()) {
-                            o.write(ser.obToByte(objects.get(id)));
+                        for (Integer id: tanks.keySet()) {
+                            o.write(ser.obToByte(tanks.get(id)));
                             o.flush();
                         }
                 	}
