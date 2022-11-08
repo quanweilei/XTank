@@ -50,6 +50,7 @@ public class XTankUI
 		color = SWT.COLOR_DARK_GREEN;
 		gun = SWT.COLOR_BLACK;
 		ser = Serializer.getInstance();
+		moveHandler = Movement.get();
 		tanks = new HashMap<>();
 		//moveHandler = Movement.get();
 	}
@@ -94,7 +95,7 @@ public class XTankUI
 
 		canvas.addKeyListener(new KeyListener() {
 			public void keyPressed(KeyEvent e) {
-				System.out.println("key " + e.character);
+				moveHandler.set(e);
 				// update tank location
 				//moveHandler.set(e);
 				x += directionX;
@@ -113,8 +114,8 @@ public class XTankUI
 		});
 
 		Menu menuBar, helpMenu, gameRules, tankColor, gunType; 
-		MenuItem helpMenuHeader, helpGetHelpItem, gameRulesItem, gameRulesHeader;
-		MenuItem tankColorHeader, gunTypeHeader, gunTypeItem;
+		MenuItem helpMenuHeader, helpGetHelpItem, gameRulesHeader;
+		MenuItem tankColorHeader, gunTypeHeader;
 		menuBar = new Menu(shell, SWT.BAR);
 
 	    helpMenuHeader = new MenuItem(menuBar, SWT.CASCADE);
@@ -124,6 +125,21 @@ public class XTankUI
 
 	    helpGetHelpItem = new MenuItem(helpMenu, SWT.PUSH);
 	    helpGetHelpItem.setText("Get Help");
+
+		helpGetHelpItem.addSelectionListener(new SelectionListener() {
+
+			@Override
+			public void widgetDefaultSelected(SelectionEvent arg0) {
+			}
+
+			@Override
+			public void widgetSelected(SelectionEvent arg0) {
+				System.out.println("User asked for Help");
+				System.out.println("So far no popup implemented, {w a s d} or arrow keys for movement");
+				System.out.println("f or left mouse click for firing.");
+			}
+			
+		});
 
 		gameRulesHeader = new MenuItem(menuBar, SWT.CASCADE);
 	    gameRulesHeader.setText("Game Rules");
@@ -145,6 +161,8 @@ public class XTankUI
 		grey.menu(tankColor);
 		Colors cyan = new Colors("Cyan", SWT.COLOR_CYAN);
 		cyan.menu(tankColor);
+		Colors darkGreen = new Colors("Default", SWT.COLOR_DARK_GREEN);
+		darkGreen.menu(tankColor);
 
 		gunTypeHeader = new MenuItem(menuBar, SWT.CASCADE);
 	    gunTypeHeader.setText("Gun");
@@ -176,6 +194,10 @@ public class XTankUI
 				display.sleep();
 
 		display.dispose();		
+	}
+
+	public void setDir(int dirX,int dirY) {
+		
 	}
 	
 	class Runner implements Runnable
