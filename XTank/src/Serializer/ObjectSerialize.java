@@ -3,7 +3,10 @@ package Serializer;
 import java.io.Serializable;
 
 import javax.print.attribute.PrintServiceAttribute;
-
+/*
+ * Quanwei Lei
+ * ObjectSerialize serializes all needed for information for every object needed in the game.
+ */
 public class ObjectSerialize implements Serializable{
     private String name;
     private int x;

@@ -73,9 +73,11 @@ public class XTankUI
 				ObjectSerialize curr = tanks.get(id);
 				int currx = curr.x();
 				int curry = curr.y();
-				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_DARK_GREEN));
+				int color = curr.color();
+				int black = curr.gun();
+				event.gc.setBackground(shell.getDisplay().getSystemColor(color));
 				event.gc.fillRectangle(currx, curry, 50, 100);
-				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
+				event.gc.setBackground(shell.getDisplay().getSystemColor(black));
 				event.gc.fillOval(currx, curry+25, 50, 50);
 				event.gc.setLineWidth(4);
 				event.gc.drawLine(currx+25, curry+25, currx+25, curry-15);
@@ -109,6 +111,52 @@ public class XTankUI
 			}
 			public void keyReleased(KeyEvent e) {}
 		});
+
+		Menu menuBar, helpMenu, gameRules, tankColor, gunType; 
+		MenuItem helpMenuHeader, helpGetHelpItem, gameRulesItem, gameRulesHeader;
+		MenuItem tankColorHeader, gunTypeHeader, gunTypeItem;
+		menuBar = new Menu(shell, SWT.BAR);
+
+	    helpMenuHeader = new MenuItem(menuBar, SWT.CASCADE);
+	    helpMenuHeader.setText("Help");
+	    helpMenu = new Menu(shell, SWT.DROP_DOWN);
+	    helpMenuHeader.setMenu(helpMenu);
+
+	    helpGetHelpItem = new MenuItem(helpMenu, SWT.PUSH);
+	    helpGetHelpItem.setText("Get Help");
+
+		gameRulesHeader = new MenuItem(menuBar, SWT.CASCADE);
+	    gameRulesHeader.setText("Game Rules");
+	    gameRules = new Menu(shell, SWT.DROP_DOWN);
+	    gameRulesHeader.setMenu(gameRules);
+
+		tankColorHeader = new MenuItem(menuBar, SWT.CASCADE);
+	    tankColorHeader.setText("Color");
+	    tankColor = new Menu(shell, SWT.DROP_DOWN);
+	    tankColorHeader.setMenu(tankColor);
+
+		Colors red = new Colors("Red", SWT.COLOR_RED);
+		red.menu(tankColor);
+		Colors blue = new Colors("Blue", SWT.COLOR_BLUE);
+		blue.menu(tankColor);
+		Colors green = new Colors("Green", SWT.COLOR_GREEN);
+		green.menu(tankColor);
+		Colors grey = new Colors("Gray", SWT.COLOR_GRAY);
+		grey.menu(tankColor);
+		Colors cyan = new Colors("Cyan", SWT.COLOR_CYAN);
+		cyan.menu(tankColor);
+
+		gunTypeHeader = new MenuItem(menuBar, SWT.CASCADE);
+	    gunTypeHeader.setText("Gun");
+	    gunType = new Menu(shell, SWT.DROP_DOWN);
+	    gunTypeHeader.setMenu(gunType);
+
+		Guns fast = new Guns("Fast Cannon", SWT.COLOR_BLACK);
+		fast.menu(gunType);
+		Guns slow = new Guns("Slow Cannon", SWT.COLOR_DARK_GRAY);
+		slow.menu(gunType);
+
+		shell.setMenuBar(menuBar);
 
 		try {
 			ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionY, directionX, id);
@@ -149,12 +197,70 @@ public class XTankUI
 		}
 	};	
 
-	public void setColor(int color) {
-		this.color = color;
+	// Color factory for menu
+	// Quanwei Lei
+	private class Colors {
+		private String name = "Color Name";
+		private int c;
+		
+		private Colors(String name, int color) {
+			this.name = name;
+			this.c = color;
+		}
+		
+		private void menu(Menu colorMenu) {
+			MenuItem item = new MenuItem(colorMenu, SWT.PUSH);
+			item.setText(name);
+			item.addSelectionListener(new SelectionListener() {
+				@Override
+				public void widgetDefaultSelected(SelectionEvent arg0) {
+				}
+				@Override
+				public void widgetSelected(SelectionEvent arg0) {
+					System.out.println("Changing tank color to: " + name);
+					color = c;
+					ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionY, directionX, id);
+					try {
+						out.write(ser.obToByte(obj));
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			});
+		}
 	}
 
-	public void setGun(int gun) {
-		this.gun = gun;
+	// Gun factory for menu
+	// Quanwei Lei
+	private class Guns {
+		private String name = "Color Name";
+		private int c;
+		
+		private Guns(String name, int color) {
+			this.name = name;
+			this.c = color;
+		}
+		
+		private void menu(Menu colorMenu) {
+			MenuItem item = new MenuItem(colorMenu, SWT.PUSH);
+			item.setText(name);
+			item.addSelectionListener(new SelectionListener() {
+				@Override
+				public void widgetDefaultSelected(SelectionEvent arg0) {
+				}
+				@Override
+				public void widgetSelected(SelectionEvent arg0) {
+					System.out.println("Changing tank gun to: " + name);
+					gun = c;
+					ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionY, directionX, id);
+					try {
+						out.write(ser.obToByte(obj));
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			});
+		}
 	}
 }
 

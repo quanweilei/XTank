@@ -7,9 +7,19 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
+
+/*
+ * Quanwei Lei
+ * Serializer serializes ObjectSerializer and can either return an object from a byte array of vice versa.
+ * Extremely useful for transferring information regarding tanks and game world from server to client and client
+ * to server.
+ */
 public class Serializer implements Serializable{
     static Serializer ser = null;
 
+    /*
+     * Singleton instance of a serializer
+     */
     public static Serializer getInstance() {
         if (ser == null) {
             ser = new Serializer();
