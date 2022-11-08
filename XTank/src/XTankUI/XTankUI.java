@@ -41,6 +41,8 @@ public class XTankUI
 	private Command moveHandler;
 
 	private static HashMap<Integer, ObjectSerialize> tanks;
+	private static ArrayList<ObjectSerialize> bullets;
+	
 	
 	public XTankUI(DataInputStream in, DataOutputStream out, int id /* , int startx, int starty*/)
 	{
@@ -55,6 +57,7 @@ public class XTankUI
 		moveHandler = Movement.get();
 		moveHandler.connect(this);
 		tanks = new HashMap<>();
+		bullets = new ArrayList<>();
 		width = 50;
 		height = 100;
 		//moveHandler = Movement.get();
@@ -97,6 +100,23 @@ public class XTankUI
 				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
 				event.gc.drawText("Player " + String.valueOf(id), midX, midY + cHeight);
 			}
+			/*
+			for (ObjectSerialize bull: bullets) {
+					int currx = bull.x();
+					int curry = bull.y();
+					int cDirX = bull.dirX();
+					int cDirY = bull.dirY();
+					int cWidth = bull.width();
+					int cHeight = bull.height();
+					int midX = ((2 * currx + cWidth)/2) - 25;
+					int midY = ((2 * curry + cHeight)/2) - 25;
+					event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
+					event.gc.fillOval(midX + cDirX*7 + 25, midY + cDirY*7 + 25, 10, 10);
+					bull.setXY(currx+cDirX, curry+cDirY);
+					event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
+			}
+			*/
+			
 		});	
 
 		canvas.addMouseListener(new MouseListener() {
@@ -113,6 +133,7 @@ public class XTankUI
 				// update tank location
 				//moveHandler.set(e);
 				try {
+					
 					ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height);
 					out.write(ser.obToByte(obj));
 				}
@@ -122,8 +143,45 @@ public class XTankUI
 
 				canvas.redraw();
 			}
-			public void keyReleased(KeyEvent e) {}
+			public void keyReleased(KeyEvent e) {
+				/*
+				if (e.character == 'f') {
+					ObjectSerialize bullobj = new ObjectSerialize("Bullet", x, y, 
+							color, gun, directionX, directionY, id, width, height);
+					bullets.add(bullobj);
+					try {
+						out.write(ser.obToByte(bullobj));
+					} catch (IOException e1) {
+						System.out.println("The server did not respond (write KL).");
+					}
+				}
+				*/
+			}
 		});
+		
+		/*Ellie Martin: Key listener for firing
+		canvas.addKeyListener(new KeyListener() {
+			@Override
+			public void keyPressed(KeyEvent e) {
+				try {
+					if (e.character == 'f') {
+						ObjectSerialize bullobj = new ObjectSerialize("Bullet", x, y, 
+								color, gun, directionX, directionY, id, width, height);
+						out.write(ser.obToByte(bullobj));
+					}
+				}
+				catch(IOException ex) {
+					System.out.println("The server did not respond (write KL).");
+				}
+				
+			}
+			@Override
+			public void keyReleased(KeyEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+		});
+		*/
 
 		Menu menuBar, helpMenu, gameRules, tankColor, gunType; 
 		MenuItem helpMenuHeader, helpGetHelpItem, gameRulesHeader;
@@ -245,19 +303,28 @@ public class XTankUI
 				{
 					ObjectSerialize obj = ser.byteToOb(in.readNBytes(176));
 					if (!obj.name().equals("null")) {
-						tanks.put(obj.id(), obj);
+						if (obj.name().equals("Tank")) {
+							tanks.put(obj.id(), obj);
+						}
+						
+						//if (obj.name().equals("Bullet")) {
+							//bullets.add(obj);
+						//}
+						
 						canvas.redraw();
 					}
 					else {
 						if (obj.id() != -1) {
-							tanks.remove(obj.id());
+							if (obj.name().equals("Tank")) {
+								tanks.remove(obj.id());
+							}
 						}
 					}
 				}
 			}
 			catch(IOException | ClassNotFoundException ex) {
 				System.out.println("The server did not respond (async).");
-			}				
+			}
             display.timerExec(150, this);
 		}
 	};	

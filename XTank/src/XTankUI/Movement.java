@@ -53,6 +53,9 @@ public class Movement implements Command{
             }
             ui.setDir(0, 10);
         }
+        if (command.equals("fire")) {
+        	System.out.println("Fire");
+        }
     }
 
     @Override
@@ -70,6 +73,9 @@ public class Movement implements Command{
         }
         if ((e.keyCode == 16777218) || (e.character == 's')){
             command = "down";
+        }
+        if (e.character == 'f') {
+        	command = "fire";
         }
         this.execute(command);
     }
