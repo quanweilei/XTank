@@ -39,6 +39,7 @@ public class XTankUI
 	private Serializer ser;
 
 	private Command moveHandler;
+	private Command fireHandler;
 
 	private static HashMap<Integer, ObjectSerialize> tanks;
 	private static ArrayList<ObjectSerialize> bullets;
@@ -55,7 +56,9 @@ public class XTankUI
 		gun = SWT.COLOR_BLACK;
 		ser = Serializer.getInstance();
 		moveHandler = Movement.get();
+		fireHandler = Firing.getInstance();
 		moveHandler.connect(this);
+		fireHandler.connect(this);
 		tanks = new HashMap<>();
 		bullets = new ArrayList<>();
 		width = 50;
@@ -131,7 +134,6 @@ public class XTankUI
 			public void keyPressed(KeyEvent e) {
 				moveHandler.set(e);
 				// update tank location
-				//moveHandler.set(e);
 				try {
 					
 					ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height);
@@ -310,16 +312,12 @@ public class XTankUI
 						//if (obj.name().equals("Bullet")) {
 							//bullets.add(obj);
 						//}
-						
-						canvas.redraw();
 					}
 					else {
-						if (obj.id() != -1) {
-							if (obj.name().equals("Tank")) {
-								tanks.remove(obj.id());
-							}
-						}
+						System.out.println("Player " + obj.id() + " Disconnected");
+						tanks.remove(obj.id());
 					}
+					canvas.redraw();
 				}
 			}
 			catch(IOException | ClassNotFoundException ex) {

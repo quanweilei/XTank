@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.Executors;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import Serializer.ObjectSerialize;
 import Serializer.Serializer;
@@ -12,7 +14,9 @@ import java.net.InetAddress;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -74,7 +78,7 @@ public class XTankServer
         
         XTankManager(Socket socket, int id) { this.socket = socket; this.id = id; mySers = new ArrayList<>();}
 
-        @Override
+		@Override
         public synchronized void run() 
         {
             System.out.println("Connected: " + socket);
@@ -89,19 +93,22 @@ public class XTankServer
                 {   
                     ObjectSerialize obj = ser.byteToOb(in.readNBytes(176));
                     if (obj.name().contains("Tank")) {
-                        tanks.put(obj.id(), obj);
+                    	tanks.put(obj.id(), obj);
                     }
+                    
                     System.out.println(tanks);
                 	
                 	for (DataOutputStream o: sq)
                 	{
-                        for (Integer id: tanks.keySet()) {
-                            o.write(ser.obToByte(tanks.get(id)));
+                        for (Integer j: tanks.keySet()) {
+                            o.write(ser.obToByte(tanks.get(j)));
                             o.flush();
                         }
-                        o.write(ser.obToByte(reset));
+                        if (reset.id() != -1) {
+                        	System.out.println("LEFT");
+                        	o.write(ser.obToByte(reset));
+                        }
                         o.flush();
-                        Thread.sleep(20);
                 	}
                 }
             } 
