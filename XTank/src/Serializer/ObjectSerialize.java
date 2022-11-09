@@ -17,9 +17,10 @@ public class ObjectSerialize implements Serializable{
     private int id;
     private int width;
     private int height;
+    private int status;
 
 
-    public ObjectSerialize(String name, int x, int y, int color, int gun, int dirX, int dirY, int id, int width, int height) {
+    public ObjectSerialize(String name, int x, int y, int color, int gun, int dirX, int dirY, int id, int width, int height, int status) {
         this.name = name;
         this.x = x;
         this.y = y;
@@ -77,6 +78,11 @@ public class ObjectSerialize implements Serializable{
         return this.height;
     }
     
+    // returns status of object, if 0, indicates death of this object
+    public int getStatus() {
+    	return this.status;
+    }
+    
     public void setID(int id) {
     	this.id = id;
     }
@@ -84,6 +90,10 @@ public class ObjectSerialize implements Serializable{
     public void setXY(int x, int y) {
     	this.x = x;
     	this.y = y;
+    }
+    
+    public void setStatus(int status) {
+    	this.status = status;
     }
 
 }

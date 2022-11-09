@@ -26,41 +26,33 @@ public class Movement implements Command{
         int[] dir = ui.getDir();
         int[] dim = ui.getDim();
         if (command.equals("right")) {
-            System.out.println("Right");
             if ((dir[0] != 10) && (dir[0] != -10)) {
                 ui.setDimensions(dim[1], dim[0]);
             }
             ui.setDir(10, 0);
         }
-        if (command.equals("left")) {
-            System.out.println("Left"); 
+        if (command.equals("left")) { 
             if ((dir[0] != 10) && (dir[0] != -10)) {
                 ui.setDimensions(dim[1], dim[0]);
             }
             ui.setDir(-10, 0);
         }
         if (command.equals("up")) {
-            System.out.println("Up");
             if ((dir[1] != 10) && (dir[1] != -10)) {
                 ui.setDimensions(dim[1], dim[0]);
             }
             ui.setDir(0, -10);
         }
         if (command.equals(("down"))) {
-            System.out.println("Down");
             if ((dir[1] != 10) && (dir[1] != -10)) {
                 ui.setDimensions(dim[1], dim[0]);
             }
             ui.setDir(0, 10);
         }
-        if (command.equals("fire")) {
-        	System.out.println("Fire");
-        }
     }
 
     @Override
     public void set(KeyEvent e) {
-        System.out.println(e.keyCode);
         String command = "nothing";
         if ((e.keyCode == 16777220) || (e.character == 'd')){
             command = "right";
@@ -74,9 +66,7 @@ public class Movement implements Command{
         if ((e.keyCode == 16777218) || (e.character == 's')){
             command = "down";
         }
-        if (e.character == 'f') {
-        	command = "fire";
-        }
         this.execute(command);
+
     }
 }

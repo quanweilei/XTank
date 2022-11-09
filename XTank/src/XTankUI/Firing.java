@@ -51,7 +51,7 @@ public class Firing implements Command {
 		int[] s = ui.getDim();
 		int width = s[0];
 		int height = s[1];
-		ObjectSerialize bullobj = new ObjectSerialize("bull", x, y, ui.getColor(), 0, dirX, dirY, -1, width, height);
+		ObjectSerialize bullobj = new ObjectSerialize("bull", x, y, ui.getColor(), 0, dirX, dirY, -1, width, height, 1);
 		try {
 			ui.fired(bullobj);
 		} catch (IOException e) {

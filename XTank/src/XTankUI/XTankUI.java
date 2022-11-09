@@ -28,13 +28,15 @@ public class XTankUI
 	private int gun;
 	private int width;
 	private int height;
+	private int hp;
 	private static int id;
+	private static int started;
 
 	private Canvas canvas;
 	private Display display;
 	
-	DataInputStream in; 
-	DataOutputStream out;
+	private DataInputStream in; 
+	private DataOutputStream out;
 
 	private Serializer ser;
 
@@ -45,11 +47,12 @@ public class XTankUI
 	private static HashMap<Integer, ObjectSerialize> bullets;
 	
 	
-	public XTankUI(DataInputStream in, DataOutputStream out, int id /* , int startx, int starty*/)
+	public XTankUI(DataInputStream in, DataOutputStream out, int id, int start /* , int startx, int starty*/)
 	{
+		System.out.println("This Client is Player " + id);
 		this.in = in;
 		this.out = out;
-		this.id = id;
+		XTankUI.id = id;
 		//x = startx;
 		//y = starty;
 		color = SWT.COLOR_DARK_GREEN;
@@ -63,19 +66,28 @@ public class XTankUI
 		bullets = new HashMap<>();
 		width = 50;
 		height = 100;
+		XTankUI.started = start;
+		System.out.println(start);
+		System.out.println(started);
+		display = new Display();
+		if (started == 0) {
+			this.waiting();
+		}
+		else {
+			this.start();
+		}
 		//moveHandler = Movement.get();
 	}
 	
 	public void start()
 	{
-		display = new Display();
 		Shell shell = new Shell(display);
-
+		System.out.println(display);
 		shell.setText("xtank");
 		shell.setLayout(new FillLayout());
 
 		canvas = new Canvas(shell, SWT.NO_BACKGROUND);
-
+		
 		this.canvas.addPaintListener(event -> {
 			// display all tanks
 			event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
@@ -122,7 +134,7 @@ public class XTankUI
 		canvas.addMouseListener(new MouseListener() {
 			public void mouseDown(MouseEvent e) {
 				fireHandler.set(e);
-			} 
+			}
 			public void mouseUp(MouseEvent e) {} 
 			public void mouseDoubleClick(MouseEvent e) {} 
 		});
@@ -137,20 +149,97 @@ public class XTankUI
 					// update tank location
 					try {
 						
-						ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height);
+						ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height, 1);
 						out.write(ser.obToByte(obj));
 					}
 					catch(IOException ex) {
 						System.out.println("The server did not respond (write KL).");
 					}
 				}
-
+				
 				canvas.redraw();
 			}
 			public void keyReleased(KeyEvent e) {
 			}
 		});
+		
+		settings(shell);
+		
+		try {
+			ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height, 1);
+			System.out.println("Sending out Object of Length: " + ser.obToByte(obj).length);
+			out.write(ser.obToByte(obj));
+		}
+		catch(IOException ex) {
+			System.out.println("The server did not respond (initial write).");
+			System.out.println(ex);
+		}				
+		Runnable runnable = new Runner();
+		display.asyncExec(runnable);
 
+		shell.open();
+		while (!shell.isDisposed()) 
+			if (!display.readAndDispatch())
+				display.sleep();
+
+		display.dispose();		
+	}
+	
+	/*
+	 * Quanwei Lei
+	 * Menu when waiting for players
+	 */
+	public void waiting() {
+		Shell start = new Shell(display);
+		start.setBounds(900 , 600, 400, 400);
+		start.setText("Waiting for Game to Start...");
+		settings(start);
+		Button button = new Button(start, SWT.PUSH);
+		button.setText("Start Game");
+		button.addListener(SWT.Selection, new Listener() {
+
+			@Override
+			public void handleEvent(Event arg0) {
+				System.out.println("Pressed Start");
+				started = 1;
+				try {
+					out.write(started);
+					out.flush();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			
+		});
+		
+		button.setBounds(145, 200, 100, 30);
+		start.open();
+		while (!start.isDisposed()) {
+			  try {
+				if (in.available() > 0) {
+					System.out.println(id);
+					started = ser.byteToOb(in.readNBytes(189)).getStatus();
+				}
+				if (started == 1) {
+					start.dispose();;
+					start();
+					break;
+				}
+			  } catch (IOException | ClassNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			  }
+		      if (!display.readAndDispatch()) {
+		        // If no more entries in event queue
+		        display.sleep();
+		      }
+		}
+
+		display.dispose();
+		
+	}
+	
+	public void settings(Shell shell) {
 		Menu menuBar, helpMenu, gameRules, tankColor, gunType; 
 		MenuItem helpMenuHeader, helpGetHelpItem, gameRulesHeader;
 		MenuItem tankColorHeader, gunTypeHeader;
@@ -213,25 +302,6 @@ public class XTankUI
 		slow.menu(gunType);
 
 		shell.setMenuBar(menuBar);
-
-		try {
-			ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height);
-			System.out.println(ser.obToByte(obj).length);
-			out.write(ser.obToByte(obj));
-		}
-		catch(IOException ex) {
-			System.out.println("The server did not respond (initial write).");
-			System.out.println(ex);
-		}				
-		Runnable runnable = new Runner();
-		display.asyncExec(runnable);
-
-		shell.open();
-		while (!shell.isDisposed()) 
-			if (!display.readAndDispatch())
-				display.sleep();
-
-		display.dispose();		
 	}
 
 	public void setDir(int dirX,int dirY) {
@@ -277,6 +347,7 @@ public class XTankUI
 	}
 
 
+
 	
 	class Runner implements Runnable
 	{
@@ -285,7 +356,8 @@ public class XTankUI
 			try {
 				if (in.available() > 0)
 				{
-					ObjectSerialize obj = ser.byteToOb(in.readNBytes(176));
+					ObjectSerialize obj = ser.byteToOb(in.readNBytes(189));
+					System.out.println(obj);
 					if (!obj.name().equals("null")) {
 						if (obj.name().equals("Tank")) {
 							tanks.put(obj.id(), obj);
@@ -331,7 +403,7 @@ public class XTankUI
 				public void widgetSelected(SelectionEvent arg0) {
 					System.out.println("Changing tank color to: " + name);
 					color = c;
-					ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height);
+					ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height, 1);
 					try {
 						out.write(ser.obToByte(obj));
 					} catch (IOException e) {
@@ -364,7 +436,7 @@ public class XTankUI
 				public void widgetSelected(SelectionEvent arg0) {
 					System.out.println("Changing tank gun to: " + name);
 					gun = c;
-					ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height);
+					ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height, 1);
 					try {
 						out.write(ser.obToByte(obj));
 					} catch (IOException e) {
