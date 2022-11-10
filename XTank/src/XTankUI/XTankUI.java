@@ -30,7 +30,7 @@ public class XTankUI
 	private int height;
 	private int hp;
 	private static int id;
-	private static int started;
+	private static ObjectSerialize myStat;
 
 	private Canvas canvas;
 	private Display display;
@@ -47,7 +47,7 @@ public class XTankUI
 	private static HashMap<Integer, ObjectSerialize> bullets;
 	
 	
-	public XTankUI(DataInputStream in, DataOutputStream out, int id, int start /* , int startx, int starty*/)
+	public XTankUI(DataInputStream in, DataOutputStream out, int id, int start /* , int startx, int starty*/) throws IOException
 	{
 		System.out.println("This Client is Player " + id);
 		this.in = in;
@@ -66,11 +66,13 @@ public class XTankUI
 		bullets = new HashMap<>();
 		width = 50;
 		height = 100;
-		XTankUI.started = start;
-		System.out.println(start);
-		System.out.println(started);
+
+		myStat = new ObjectSerialize("plyr", -1, -1, -1, -1, -1, -1, -1, -1, -1, start);
+		out.write(ser.obToByte(myStat));
+		System.out.println("Sending out status");
 		display = new Display();
-		if (started == 0) {
+		
+		if (myStat.getStatus() == 0) {
 			this.waiting();
 		}
 		else {
@@ -189,7 +191,7 @@ public class XTankUI
 	 * Quanwei Lei
 	 * Menu when waiting for players
 	 */
-	public void waiting() {
+	public void waiting() throws IOException {
 		Shell start = new Shell(display);
 		start.setBounds(900 , 600, 400, 400);
 		start.setText("Waiting for Game to Start...");
@@ -201,13 +203,7 @@ public class XTankUI
 			@Override
 			public void handleEvent(Event arg0) {
 				System.out.println("Pressed Start");
-				started = 1;
-				try {
-					out.write(started);
-					out.flush();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+				myStat.setStatus(1);
 			}
 			
 		});
@@ -217,10 +213,12 @@ public class XTankUI
 		while (!start.isDisposed()) {
 			  try {
 				if (in.available() > 0) {
-					System.out.println(id);
-					started = ser.byteToOb(in.readNBytes(189)).getStatus();
+					ObjectSerialize ob = ser.byteToOb(in.readNBytes(189));
+					myStat = ob;
+					System.out.println(ob);
 				}
-				if (started == 1) {
+				out.write(ser.obToByte(myStat));
+				if (myStat.getStatus() == 1) {
 					start.dispose();;
 					start();
 					break;

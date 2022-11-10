@@ -46,15 +46,15 @@ public class XTankServer
         bullets = new HashMap<>();
         reset = new ObjectSerialize("null", -1, - 1, -1, -1, -1, -1, -1, -1, -1, 1);
         started = new ObjectSerialize("strt", -1, - 1, -1, -1, -1, -1, -1, -1, -1, 1);
+        var pool = Executors.newFixedThreadPool(20);
 		
         try (var listener = new ServerSocket(59896)) 
         {
             System.out.println("The XTank server is running...");
-            var pool = Executors.newFixedThreadPool(20);
             
             while (true) 
             {
-            	System.out.println("Sockets:" + sockets);
+            	System.out.println(sockets);
             	if (sockets.size() == 0) {
             		started.setStatus(0);
             	}
@@ -69,7 +69,6 @@ public class XTankServer
                 {
                     curr.getOutputStream().write(id);
                     curr.getOutputStream().write(started.getStatus());
-       
                     sockets.put(curr, id);
                     //curr.getOutputStream().write(startx);
                     //curr.getOutputStream().write(starty);
@@ -85,9 +84,10 @@ public class XTankServer
         private Socket socket;
         private int id;
         private ArrayList<DataOutputStream> mySers;
-        private 
+        private int start;
+        private ObjectSerialize myStat;
         
-        XTankManager(Socket socket, int id) { this.socket = socket; this.id = id; mySers = new ArrayList<>();}
+        XTankManager(Socket socket, int id) {start = started.getStatus(); this.socket = socket; this.id = id; mySers = new ArrayList<>();}
 
 		@Override
         public synchronized void run() 
@@ -95,65 +95,73 @@ public class XTankServer
             System.out.println("Connected: " + socket);
             try 
             {
+            	myStat = new ObjectSerialize(null, id, id, id, id, id, id, id, id, id, id);
             	tanks.put(id, null);
             	
             	DataInputStream in = new DataInputStream(socket.getInputStream());
             	DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+            	myStat = ser.byteToOb(in.readNBytes(189));
             	mySers.add(out);
                 sq.add(out);
-                while (true)
-                {   
-                	if (started.getStatus() != 0) {
-                		if (in.available() > 0) {
-                			ObjectSerialize obj = ser.byteToOb(in.readNBytes(189));
-                			System.out.println("Accepting Object: " + obj);
-                			//System.out.println(obj);
-		                    if (obj.name().contains("Tank")) {
-		                    	tanks.put(obj.id(), obj);
-		                    }
-		                    // TODO: bullet hitting terrain and other players, need some way to delete bullets
-		                    if (obj.name().equals("bull")) {
-		                    	if (obj.id() == -1) {
-		                    		int i = getBulletID();
-		                        	obj.setID(i);
-		                        	bullets.put(getBulletID(), obj);
-		                    	}
-		                    }
-                		
-	                	
-		                	for (DataOutputStream o: sq)
-		                	{
-		                        for (Integer j: tanks.keySet()) {
-		                        	if (tanks.get(j) != null) {
-		                        		o.write(ser.obToByte(tanks.get(j)));
-			                            o.flush();
-		                        	}
-		                        }
-		                        for (Integer c: bullets.keySet()) {
-		                        	o.write(ser.obToByte(bullets.get(c)));
-		                        	o.flush();
-		                        }
-		                        if (reset.id() != -1) {
-		                        	System.out.println("LEFT");
-		                        	o.write(ser.obToByte(reset));
-		                        	o.flush();
-		                        	reset.setID(-1);
-		                        }
-		                        bulletIterate();
-		                        Thread.sleep(100);
-		                	}
-                		}
-	                }
-                	else {
-                		if (in.available() > 0) {
-                			started.setStatus(in.read());
-                		}
-                		if (started.getStatus() == 1) {
-                			out.write(ser.obToByte(started));
-                			out.flush();
-                		}
+                
+                while (true) {
+                	//System.out.println("Player " + id + " waiting");
+                	if (in.available() > 0) {
+                		myStat = ser.byteToOb(in.readNBytes(189));
+                		System.out.println("Receiving Status " + myStat.getStatus());
+                	}
+                	if (started.getStatus() == 1) {
+                		myStat.setStatus(1);
+                		out.write(ser.obToByte(myStat));
+            			break;
+            		}
+                	if (myStat.getStatus() == 1) {
+                		started.setStatus(1);
+                		break;
                 	}
                 }
+                
+                System.out.println("Player " + id + " in game");
+                while (true)
+                {   
+        			ObjectSerialize obj = ser.byteToOb(in.readNBytes(189));
+        			System.out.println("Accepting Object: " + obj);
+        			//System.out.println(obj);
+                    if (obj.name().contains("Tank")) {
+                    	tanks.put(obj.id(), obj);
+                    }
+                    // TODO: bullet hitting terrain and other players, need some way to delete bullets
+                    if (obj.name().equals("bull")) {
+                    	if (obj.id() == -1) {
+                    		int i = getBulletID();
+                        	obj.setID(i);
+                        	bullets.put(getBulletID(), obj);
+                    	}
+                    }
+            	
+                	for (DataOutputStream o: sq)
+                	{
+                        for (Integer j: tanks.keySet()) {
+                        	if (tanks.get(j) != null) {
+                        		o.write(ser.obToByte(tanks.get(j)));
+	                            o.flush();
+                        	}
+                        }
+                        for (Integer c: bullets.keySet()) {
+                        	o.write(ser.obToByte(bullets.get(c)));
+                        	o.flush();
+                        }
+                        if (reset.id() != -1) {
+                        	System.out.println("LEFT");
+                        	o.write(ser.obToByte(reset));
+                        	o.flush();
+                        	reset.setID(-1);
+                        }
+                        bulletIterate();
+                        Thread.sleep(100);
+                	}
+            }
+                
             } 
             catch (Exception e) 
             {
@@ -162,14 +170,22 @@ public class XTankServer
             } 
             finally 
             {
-                leave();
+                try {
+					leave();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
             }
         }
 		
-		public void leave() {
-			try { sockets.remove(socket); if (sockets.size() == 0) {started.setStatus(0);} reset.setID(id); tanks.remove(id); sq.removeAll(mySers); socket.close(); } 
-            catch (IOException e) {}
+		public void leave() throws Exception {
+			try { sockets.remove(socket); reset.setID(id); tanks.remove(id); sq.removeAll(mySers); socket.close(); } 
+            catch (Exception e) {}
             System.out.println("Closed: " + socket);
+            if (sockets.size() == 0) {
+            	started.setStatus(0);
+            	System.out.println("Reseting Server");
+            }
 		}
     }
 
