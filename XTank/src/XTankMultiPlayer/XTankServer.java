@@ -7,6 +7,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import BoundCheck.Bounds;
 import Serializer.ObjectSerialize;
 import Serializer.Serializer;
 
@@ -16,6 +17,7 @@ import java.io.DataOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,23 +31,39 @@ public class XTankServer
     private static Serializer ser;
     private static HashMap<Integer, ObjectSerialize> tanks;
     private static HashMap<Integer, ObjectSerialize> bullets;
+    private static HashSet<ObjectSerialize> walls;
     private static HashMap<Socket, Integer> sockets;
     // TODO: implement different spawning, will be done with maze generation
     private static ArrayList<Integer[]> spawnable;
     private static ObjectSerialize reset;
     private static ObjectSerialize started;
+    private static ObjectSerialize win;
+    private static ObjectSerialize loss;
+    private static Bounds bCheck;
     
     public static void main(String[] args) throws Exception 
     {
 		System.out.println(InetAddress.getLocalHost());
+		bCheck = Bounds.getInstance();
 		sq = new ArrayList<>();
         ser = Serializer.getInstance();
         tanks = new HashMap<>();
         spawnable = new ArrayList<>();
+        walls = new HashSet<>();
         sockets = new HashMap<>();
+        bCheck.walls(walls);
+        
+        // ability to change bounds not implemented, but can be declared here
+        bCheck.setBounds(967, 1904);
         bullets = new HashMap<>();
+        // reset protocol, informs of leaving players
         reset = new ObjectSerialize("null", -1, - 1, -1, -1, -1, -1, -1, -1, -1, 1);
+        // start protocol
         started = new ObjectSerialize("strt", -1, - 1, -1, -1, -1, -1, -1, -1, -1, 1);
+        // win protocol
+        win = new ObjectSerialize("iWon", -1, - 1, -1, -1, -1, -1, -1, -1, -1, 9);
+        // loss protocol
+        loss = new ObjectSerialize("lost", -1, - 1, -1, -1, -1, -1, -1, -1, -1, 8);
         var pool = Executors.newFixedThreadPool(20);
 		
         try (var listener = new ServerSocket(59896)) 
@@ -128,6 +146,7 @@ public class XTankServer
         			System.out.println("Accepting Object: " + obj);
         			//System.out.println(obj);
                     if (obj.name().contains("Tank")) {
+                    	bCheck.check(obj);
                     	tanks.put(obj.id(), obj);
                     }
                     // TODO: bullet hitting terrain and other players, need some way to delete bullets

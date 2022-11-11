@@ -84,16 +84,16 @@ public class XTankUI
 	public void start()
 	{
 		Shell shell = new Shell(display);
-		System.out.println(display);
 		shell.setText("xtank");
 		shell.setLayout(new FillLayout());
-
+		
 		canvas = new Canvas(shell, SWT.NO_BACKGROUND);
 		
 		this.canvas.addPaintListener(event -> {
 			// display all tanks
 			event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
 			event.gc.fillRectangle(canvas.getBounds());
+			System.out.println(canvas.getBounds());
 			for (Integer id: tanks.keySet()) {
 				ObjectSerialize curr = tanks.get(id);
 				int currx = curr.x();
@@ -107,10 +107,12 @@ public class XTankUI
 				event.gc.setBackground(shell.getDisplay().getSystemColor(color));
 				event.gc.fillRectangle(currx, curry, cWidth, cHeight);
 				event.gc.setBackground(shell.getDisplay().getSystemColor(black));
+				// Find middle point
 				int midX = ((2 * currx + cWidth)/2) - 25;
 				int midY = ((2 * curry + cHeight)/2) - 25;
 				event.gc.fillOval(midX, midY, 50, 50);
 				event.gc.setLineWidth(4);
+				// Draw gun
 				event.gc.drawLine(midX + 25, midY + 25, midX + cDirX*7 + 25, midY + cDirY*7 + 25);
 				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
 				event.gc.drawText("Player " + String.valueOf(id), midX, midY + cHeight);
@@ -358,6 +360,10 @@ public class XTankUI
 					System.out.println(obj);
 					if (!obj.name().equals("null")) {
 						if (obj.name().equals("Tank")) {
+							if (obj.id() == id) {
+								x = obj.x();
+								y = obj.y();
+							}
 							tanks.put(obj.id(), obj);
 						}
 						
