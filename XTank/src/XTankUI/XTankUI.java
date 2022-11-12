@@ -150,7 +150,7 @@ public class XTankUI
 				int midX = ((2 * currx + cWidth)/2) - 25;
 				int midY = ((2 * curry + cHeight)/2) - 25;
 				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
-				event.gc.fillOval(midX + cDirX*7 + 25, midY + cDirY*7 + 25, 10, 10);
+				event.gc.fillOval(midX + cDirX*9 + 25, midY + cDirY*9 + 25, 10, 10);
 				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
 			}
 			
