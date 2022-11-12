@@ -49,6 +49,23 @@ public class TankCheck implements BoundCalc{
 		int gunX = midX + cDirX*7;
 		int gunY = midY + cDirY*7;
 		
+		// If gun goes through left side
+		if (gunX < 0) {
+			obj.setXY((((-cDirX*14) - cWidth)/2), curry);
+			return;
+		}
+		
+		if (gunX > uiWidth) {
+			obj.setXY(((2*(uiWidth-cDirX*7) - cWidth)/2), curry);
+			return;
+		}
+		
+		if (gunY < 0) {
+			obj.setXY(gunX, gunY);
+			return;
+		}
+		
+		
 		
 		System.out.println("Bound Checking Tank: " + obj);
 	}

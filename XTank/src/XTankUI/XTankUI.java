@@ -16,11 +16,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 public class XTankUI
 {
 	// The location and direction of the "tank"
-	private int x = 300;
+	private int x = 1500;
 	private int y = 500;
 	private int directionX = 0;
 	private int directionY = -10;
@@ -32,7 +33,7 @@ public class XTankUI
 	private static int id;
 	private static ObjectSerialize myStat;
 
-	private Canvas canvas;
+	private static Canvas canvas;
 	private Display display;
 	
 	private DataInputStream in; 
@@ -47,7 +48,7 @@ public class XTankUI
 	private static HashMap<Integer, ObjectSerialize> bullets;
 	
 	
-	public XTankUI(DataInputStream in, DataOutputStream out, int id, int start /* , int startx, int starty*/) throws IOException
+	public XTankUI(DataInputStream in, DataOutputStream out, int id, int start /* , int startx, int starty*/) throws IOException, InterruptedException
 	{
 		System.out.println("This Client is Player " + id);
 		this.in = in;
@@ -66,7 +67,8 @@ public class XTankUI
 		bullets = new HashMap<>();
 		width = 50;
 		height = 100;
-
+		// TODO: OPTION FOR HP
+		hp = 3;
 		myStat = new ObjectSerialize("plyr", -1, -1, -1, -1, -1, -1, -1, -1, -1, start);
 		out.write(ser.obToByte(myStat));
 		System.out.println("Sending out status");
@@ -81,7 +83,7 @@ public class XTankUI
 		//moveHandler = Movement.get();
 	}
 	
-	public void start()
+	public void start() throws InterruptedException
 	{
 		Shell shell = new Shell(display);
 		shell.setText("xtank");
@@ -93,7 +95,6 @@ public class XTankUI
 			// display all tanks
 			event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
 			event.gc.fillRectangle(canvas.getBounds());
-			System.out.println(canvas.getBounds());
 			for (Integer id: tanks.keySet()) {
 				ObjectSerialize curr = tanks.get(id);
 				int currx = curr.x();
@@ -153,7 +154,7 @@ public class XTankUI
 					// update tank location
 					try {
 						
-						ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height, 1);
+						ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height, hp);
 						out.write(ser.obToByte(obj));
 					}
 					catch(IOException ex) {
@@ -170,9 +171,11 @@ public class XTankUI
 		settings(shell);
 		
 		try {
-			ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height, 1);
-			System.out.println("Sending out Object of Length: " + ser.obToByte(obj).length);
-			out.write(ser.obToByte(obj));
+			if (tanks.get(id) == null) {
+				ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height, hp);
+				System.out.println("Sending out Object of Length: " + ser.obToByte(obj).length);
+				out.write(ser.obToByte(obj));
+			}
 		}
 		catch(IOException ex) {
 			System.out.println("The server did not respond (initial write).");
@@ -182,9 +185,11 @@ public class XTankUI
 		display.asyncExec(runnable);
 
 		shell.open();
-		while (!shell.isDisposed()) 
+		while (!shell.isDisposed()) { 
 			if (!display.readAndDispatch())
 				display.sleep();
+			
+		}
 
 		display.dispose();		
 	}
@@ -193,7 +198,7 @@ public class XTankUI
 	 * Quanwei Lei
 	 * Menu when waiting for players
 	 */
-	public void waiting() throws IOException {
+	public void waiting() throws IOException, InterruptedException {
 		Shell start = new Shell(display);
 		start.setBounds(900 , 600, 400, 400);
 		start.setText("Waiting for Game to Start...");
@@ -345,13 +350,11 @@ public class XTankUI
 		out.write(ser.obToByte(bull));
 		out.flush();
 	}
-
-
-
+	
 	
 	class Runner implements Runnable
 	{
-		public synchronized void run() 
+		public void run() 
 		{
 			try {
 				if (in.available() > 0)
@@ -381,7 +384,7 @@ public class XTankUI
 			catch(IOException | ClassNotFoundException ex) {
 				System.out.println("The server did not respond (async).");
 			}
-            display.timerExec(150, this);
+            display.timerExec(100, this);
 		}
 	};	
 
