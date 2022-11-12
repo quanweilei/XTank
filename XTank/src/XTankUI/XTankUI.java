@@ -52,12 +52,16 @@ public class XTankUI
 	private static HashMap<Integer, ObjectSerialize> bullets;
 	private HashSet<ObjectSerialize> walls;
 	
+	private boolean win;
+	private boolean loss;
 	
 	private Bounds bounds;
 	
 	
 	public XTankUI(DataInputStream in, DataOutputStream out, int id, int start, int startx, int starty) throws IOException, InterruptedException
 	{
+		win = false;
+		loss = false;
 		System.out.println("This Client is Player " + id);
 		this.in = in;
 		this.out = out;
@@ -163,10 +167,20 @@ public class XTankUI
 				event.gc.drawText("Player " + String.valueOf(id), midX, midY + cHeight);
 			}
 			
-			if (hp == 0) {
+			if (loss == true) {
+				Font font = new Font(display,"Arial",32,SWT.BOLD | SWT.ITALIC);
+				event.gc.setFont(font);
 				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
 				Rectangle c = canvas.getBounds();
 				event.gc.drawText("YOU DIED", c.width/2, c.height/2);
+			}
+			
+			if (win == true) {
+				Font font = new Font(display,"Arial",32,SWT.BOLD | SWT.ITALIC);
+				event.gc.setFont(font);
+				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
+				Rectangle c = canvas.getBounds();
+				event.gc.drawText("YOU WON!", c.width/2, c.height/2);
 			}
 		});	
 
@@ -414,6 +428,9 @@ public class XTankUI
 							System.out.println(obj.getStatus());
 							if (obj.getStatus() <= 0) {
 								tanks.remove(obj.id());
+								if ((tanks.size() == 1) && (hp > 0)){
+									win = true;
+								}
 							}
 							else {
 								tanks.put(obj.id(), obj);
@@ -458,6 +475,10 @@ public class XTankUI
 					System.out.println("I was hit");
 					bullets.remove(curr.hashCode());
 					hp--;
+					if (hp == 0) {
+						loss = true;
+					}
+					canvas.redraw();
 				}
 			}
 			
