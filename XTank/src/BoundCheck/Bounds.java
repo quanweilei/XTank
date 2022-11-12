@@ -34,6 +34,7 @@ public class Bounds {
 	
 	public void tanks(HashMap<Integer, ObjectSerialize> tanks) {
 		Bounds.tanks = tanks;
+		tCheck.setTanks(tanks);
 	}
 	
 	public void walls(HashSet<ObjectSerialize> walls) {

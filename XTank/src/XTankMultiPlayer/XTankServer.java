@@ -6,6 +6,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import BoundCheck.Bounds;
 import Serializer.ObjectSerialize;
@@ -17,6 +18,7 @@ import java.io.DataOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Random;
 
 /**
  * When a client connects, a new thread is started to handle it.
@@ -36,6 +38,7 @@ public class XTankServer
     private static ObjectSerialize win;
     private static ObjectSerialize loss;
     private static Bounds bCheck;
+    private static Random random;
     
     public static void main(String[] args) throws Exception 
     {
@@ -47,8 +50,21 @@ public class XTankServer
         spawnable = new ArrayList<>();
         walls = new HashSet<>();
         sockets = new HashMap<>();
+        random = new Random();
         bCheck.walls(walls);
+        // Temporary spawns
+        Integer[] one = new Integer[2];
+        one[0] = 300;
+        one[1] = 800;
         
+        Integer[] two = new Integer[2];
+        two[0] = 300;
+        two[1] = 200;
+        
+        spawnable.add(one);
+        spawnable.add(two);
+        
+        bCheck.tanks(tanks);
         // ability to change bounds not implemented, but can be declared here
         bCheck.setBounds(967, 1904);
         bullets = new HashMap<>();
@@ -62,32 +78,36 @@ public class XTankServer
         loss = new ObjectSerialize("lost", -1, - 1, -1, -1, -1, -1, -1, -1, -1, 8);
         var pool = Executors.newFixedThreadPool(20);
         pool.execute(new Bullets());
+        
         try (var listener = new ServerSocket(59896)) 
         {
             System.out.println("The XTank server is running...");
             
             while (true) 
             {
-            	System.out.println(sockets);
+
             	if (sockets.size() == 0) {
             		started.setStatus(0);
             	}
             	reset.setID(-1);
                 Socket curr = listener.accept();
                 int id = getAvailableID();
-                if (id == -1) {
+                Integer[] spawn = randomSpawn();
+                
+                if ((id == -1) || (spawn == null)){
                     System.out.println("Too many players, denying connection");
                     curr.close();
                 }
                 else 
                 {
+                	System.out.println("Spawning Player " + id + " at " + String.valueOf(spawn[0]) + ", " + String.valueOf(spawn[1]));
                     curr.getOutputStream().write(id);
                     curr.getOutputStream().write(started.getStatus());
                     sockets.put(curr, id);
-                    //curr.getOutputStream().write(startx);
-                    //curr.getOutputStream().write(starty);
+                    curr.getOutputStream().write(spawn[0]);
+                    curr.getOutputStream().write(spawn[1]);
                     curr.getOutputStream().flush();
-                	pool.execute(new XTankManager(curr, id));
+                	pool.execute(new XTankManager(curr, id, spawn));
                 }
             }
         }
@@ -122,10 +142,10 @@ public class XTankServer
         private Socket socket;
         private int id;
         private ArrayList<DataOutputStream> mySers;
-        private int start;
         private ObjectSerialize myStat;
+        private Integer mySpawn[];
         
-        XTankManager(Socket socket, int id) {start = started.getStatus(); this.socket = socket; this.id = id; mySers = new ArrayList<>();}
+        XTankManager(Socket socket, int id, Integer[] mySpawn) { this.socket = socket; this.id = id; mySers = new ArrayList<>(); this.mySpawn = mySpawn;}
 
 		@Override
         public synchronized void run() 
@@ -146,7 +166,6 @@ public class XTankServer
                 	//System.out.println("Player " + id + " waiting");
                 	if (in.available() > 0) {
                 		myStat = ser.byteToOb(in.readNBytes(189));
-                		System.out.println("Receiving Status " + myStat.getStatus());
                 	}
                 	if (started.getStatus() == 1) {
                 		myStat.setStatus(1);
@@ -167,8 +186,8 @@ public class XTankServer
         			System.out.println("Accepting Object: " + obj);
         			//System.out.println(obj);
                     if (obj.name().contains("Tank")) {
+                    	bCheck.check(obj);
                     	if (obj != tanks.get(obj.id())) {
-                    		bCheck.check(obj);
                         	tanks.put(obj.id(), obj);
                     	}
                     }
@@ -217,7 +236,7 @@ public class XTankServer
         }
 		
 		public void leave() throws Exception {
-			try { sockets.remove(socket); reset.setID(id); tanks.remove(id); sq.removeAll(mySers); socket.close(); } 
+			try { spawnable.add(mySpawn); sockets.remove(socket); reset.setID(id); tanks.remove(id); sq.removeAll(mySers); socket.close(); } 
             catch (Exception e) {}
             System.out.println("Closed: " + socket);
             if (sockets.size() == 0) {
@@ -254,6 +273,17 @@ public class XTankServer
     		}
     		i++;
     	}
+    }
+    
+    private static Integer[] randomSpawn() {
+    	// TODO: May need to implement check for if tank is in existing spot
+    	if (spawnable.size() == 0) {
+    		return null;
+    	}
+    	int seed = random.nextInt(spawnable.size());
+        Integer[] ret = spawnable.get(seed);
+        spawnable.remove(seed);
+        return ret;
     }
 }
 

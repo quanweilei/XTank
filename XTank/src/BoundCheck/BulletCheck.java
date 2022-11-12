@@ -3,16 +3,13 @@ package BoundCheck;
 import java.util.HashMap;
 import java.util.HashSet;
 
-import org.eclipse.swt.graphics.Rectangle;
-
 import Serializer.ObjectSerialize;
-/*
- * Quanwei Lei
- * TankCheck checks the bounds of the tank and whether or not it is touching the border or another tank, and checks for wall collision
- */
-public class TankCheck implements BoundCalc{
+
+public class BulletCheck implements BoundCalc{
+
 	private static TankCheck tCheck = null;
 	private static ObjectSerialize obj;
+	private static HashMap<Integer, ObjectSerialize> bullets;
 	private static HashMap<Integer, ObjectSerialize> tanks;
 	private static HashSet<ObjectSerialize> walls;
 	private static int uiHeight;
@@ -27,7 +24,7 @@ public class TankCheck implements BoundCalc{
 	
 	@Override
 	public void setObj(ObjectSerialize obj) {
-		TankCheck.obj = obj;
+		BulletCheck.obj = obj;
 	}
 
 	@Override
@@ -37,7 +34,7 @@ public class TankCheck implements BoundCalc{
 
 	@Override
 	public void check() {
-		// First check if tank is going out of bounds
+		// First check if bullet is going out of bounds
 		ObjectSerialize curr = obj;
 		int currx = curr.x();
 		int curry = curr.y();
@@ -65,44 +62,18 @@ public class TankCheck implements BoundCalc{
 		
 		// If gun goes through top
 		if (gunY < 0) {
-			obj.setXY(currx, (((-cDirY*14) - cHeight)/2));
+			obj.setXY(gunX - 25, (((-cDirY*14) - cHeight)/2));
 			return;
 		}
 		
-		// If gun goes through bottom
 		if (gunY > uiHeight) {
-			obj.setXY(currx, ((2*(uiHeight-cDirY*7) - cHeight)/2));
+			obj.setXY(gunX - 25, ((2*(uiHeight-cDirY*7) - cHeight)/2));
 			return;
 		}
-		Rectangle currRec = new Rectangle(currx, curry, cWidth, cHeight);
-
-		
-		// Now Check if tank is touching another tank, if it is denies movement
-		for (Integer i: tanks.keySet()) {
-			if ((i != curr.id()) && (tanks.get(i) != null)){
-				System.out.println("Checking other Tank: " + tanks.get(i));
-				ObjectSerialize other = tanks.get(i);
-				int otherX = other.x();
-				int otherY = other.y();
-				int oWidth = other.width();
-				int oHeight = other.height();
-
-				Rectangle oRec = new Rectangle(otherX, otherY, oWidth, oHeight);
-				
-				System.out.println("Other Tank Coordinates: " + otherX + ", " + otherY + " to " + (otherX + oWidth) + ", " + (otherY + oHeight));
-				if (currRec.intersects(oRec)) 
-				{
-					System.out.println("Intersection, reverted position");
-					obj.setXY(tanks.get(curr.id()).x(), tanks.get(curr.id()).y());
-				}
-				
-				
-				
-			}
-		}
 		
 		
-		System.out.println("Bound Checking Tank: " + obj);
+		
+		System.out.println("Bound Checking Bullet: " + obj);
 	}
 
 	@Override
@@ -113,19 +84,18 @@ public class TankCheck implements BoundCalc{
 
 	@Override
 	public void setWalls(HashSet<ObjectSerialize> walls) {
-		TankCheck.walls = walls;
+		BulletCheck.walls = walls;
 	}
 
 	@Override
-	public void setTarget(HashMap<Integer, ObjectSerialize> tanks) {
-		TankCheck.tanks = tanks;
+	public void setTarget(HashMap<Integer, ObjectSerialize> bullets) {
+		BulletCheck.bullets = bullets;
 	}
 
 	@Override
 	public void setTanks(HashMap<Integer, ObjectSerialize> tanks) {
-		TankCheck.tanks = tanks;
+		// TODO Auto-generated method stub
+		
 	}
-	
-	
 
 }

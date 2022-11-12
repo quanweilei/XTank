@@ -22,7 +22,7 @@ public class XTankUI
 {
 	// The location and direction of the "tank"
 	private int x = 1500;
-	private int y = 500;
+	private int y = 800;
 	private int directionX = 0;
 	private int directionY = -10;
 	private int color;
@@ -48,14 +48,14 @@ public class XTankUI
 	private static HashMap<Integer, ObjectSerialize> bullets;
 	
 	
-	public XTankUI(DataInputStream in, DataOutputStream out, int id, int start /* , int startx, int starty*/) throws IOException, InterruptedException
+	public XTankUI(DataInputStream in, DataOutputStream out, int id, int start, int startx, int starty) throws IOException, InterruptedException
 	{
 		System.out.println("This Client is Player " + id);
 		this.in = in;
 		this.out = out;
 		XTankUI.id = id;
-		//x = startx;
-		//y = starty;
+		x = startx;
+		y = starty;
 		color = SWT.COLOR_DARK_GREEN;
 		gun = SWT.COLOR_BLACK;
 		ser = Serializer.getInstance();
@@ -91,7 +91,7 @@ public class XTankUI
 		
 		canvas = new Canvas(shell, SWT.NO_BACKGROUND);
 		
-		this.canvas.addPaintListener(event -> {
+		canvas.addPaintListener(event -> {
 			// display all tanks
 			event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
 			event.gc.fillRectangle(canvas.getBounds());
