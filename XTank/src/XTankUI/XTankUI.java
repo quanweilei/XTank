@@ -6,6 +6,7 @@ import org.eclipse.swt.graphics.*;
 import org.eclipse.swt.layout.*;
 import org.eclipse.swt.widgets.*;
 
+import BoundCheck.Bounds;
 import Serializer.ObjectSerialize;
 import Serializer.Serializer;
 
@@ -13,8 +14,11 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -44,8 +48,12 @@ public class XTankUI
 	private Command moveHandler;
 	private Firing fireHandler;
 
-	private static HashMap<Integer, ObjectSerialize> tanks;
+	private HashMap<Integer, ObjectSerialize> tanks;
 	private static HashMap<Integer, ObjectSerialize> bullets;
+	private HashSet<ObjectSerialize> walls;
+	
+	
+	private Bounds bounds;
 	
 	
 	public XTankUI(DataInputStream in, DataOutputStream out, int id, int start, int startx, int starty) throws IOException, InterruptedException
@@ -67,6 +75,10 @@ public class XTankUI
 		bullets = new HashMap<>();
 		width = 50;
 		height = 100;
+		bounds = Bounds.getInstance();
+		bounds.setBounds(967, 1904);
+		bounds.tanks(tanks);
+		bounds.walls(walls);
 		// TODO: OPTION FOR HP
 		hp = 3;
 		myStat = new ObjectSerialize("plyr", -1, -1, -1, -1, -1, -1, -1, -1, -1, start);
@@ -115,13 +127,15 @@ public class XTankUI
 				event.gc.setLineWidth(4);
 				// Draw gun
 				event.gc.drawLine(midX + 25, midY + 25, midX + cDirX*7 + 25, midY + cDirY*7 + 25);
-				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
-				event.gc.drawText("Player " + String.valueOf(id), midX, midY + cHeight);
 			}
 			
+			BulletIterator BI = new BulletIterator(bullets);
+			@SuppressWarnings("rawtypes")
+			Iterator bIt = BI.iterator();
+			
 			// Ellie Martin
-			for (Integer b: bullets.keySet()) {
-				ObjectSerialize bull = bullets.get(b);
+			while (bIt.hasNext()) {
+				ObjectSerialize bull = (ObjectSerialize) bIt.next();
 				int currx = bull.x();
 				int curry = bull.y();
 				int cDirX = bull.dirX();
@@ -133,6 +147,19 @@ public class XTankUI
 				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
 				event.gc.fillOval(midX + cDirX*7 + 25, midY + cDirY*7 + 25, 10, 10);
 				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
+			}
+			
+			// Print out name tags
+			for (Integer id: tanks.keySet()) {
+				ObjectSerialize curr = tanks.get(id);
+				int currx = curr.x();
+				int curry = curr.y();
+				int cWidth = curr.width();
+				int cHeight = curr.height();
+				int midX = ((2 * currx + cWidth)/2) - 25;
+				int midY = ((2 * curry + cHeight)/2) - 25;
+				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
+				event.gc.drawText("Player " + String.valueOf(id), midX, midY + cHeight);
 			}
 		});	
 
@@ -153,9 +180,8 @@ public class XTankUI
 					moveHandler.set(e);
 					// update tank location
 					try {
-						
 						ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height, hp);
-						out.write(ser.obToByte(obj));
+						out.write(ser.obToByte(bounds.check(obj)));
 					}
 					catch(IOException ex) {
 						System.out.println("The server did not respond (write KL).");
@@ -182,7 +208,9 @@ public class XTankUI
 			System.out.println(ex);
 		}				
 		Runnable runnable = new Runner();
+		Runnable bulIt = new Bullets();
 		display.asyncExec(runnable);
+		display.asyncExec(bulIt);
 
 		shell.open();
 		while (!shell.isDisposed()) { 
@@ -347,9 +375,20 @@ public class XTankUI
 	}
 	
 	protected void fired(ObjectSerialize bull) throws IOException {
+		System.out.println(bull.getStatus());
 		out.write(ser.obToByte(bull));
 		out.flush();
 	}
+	
+	private static int getBulletID() {
+    	int i = 0;
+    	while (true) {
+    		if (!bullets.containsKey(i)) {
+    			return i;
+    		}
+    		i++;
+    	}
+    }
 	
 	
 	class Runner implements Runnable
@@ -371,12 +410,15 @@ public class XTankUI
 						}
 						
 						if (obj.name().equals("bull")) {
-							bullets.put(obj.id(), obj);
+							if (!bullets.containsKey(obj.id())) {
+								bullets.put(getBulletID(), obj);
+							}
 						}
 					}
 					else {
 						System.out.println("Player " + obj.id() + " Disconnected");
 						tanks.remove(obj.id());
+
 					}
 					canvas.redraw();
 				}
@@ -387,6 +429,31 @@ public class XTankUI
             display.timerExec(100, this);
 		}
 	};	
+	
+    private class Bullets implements Runnable {
+
+		@Override
+		public void run() {
+			@SuppressWarnings("rawtypes")
+			Iterator bIt = new BulletIterator(bullets).iterator();
+			
+			while (bIt.hasNext()) {
+				ObjectSerialize curr = (ObjectSerialize) bIt.next();
+				curr.setXY(curr.x() + curr.dirX() * 2, curr.y() + curr.dirY() * 2);
+				bounds.check(curr);
+				if (curr.getStatus() == 0) {
+					bullets.remove(curr.id());
+
+				}
+			}
+			
+			canvas.redraw();
+			display.timerExec(100, this);
+			
+		}
+    	
+    	
+    }
 
 	// Color factory for menu
 	// Quanwei Lei
@@ -452,6 +519,43 @@ public class XTankUI
 				}
 			});
 		}
+	}
+	
+	@SuppressWarnings("rawtypes")
+	private class BulletIterator implements Iterable{
+		private List<Object> state;
+		private int currentSize;
+		
+		public BulletIterator(HashMap<Integer, ObjectSerialize> b) {
+			state = Arrays.asList(b.values().toArray());
+			currentSize = state.size();
+		}
+		
+		
+		@Override
+	    public Iterator iterator() {
+	        Iterator it = new Iterator() {
+	            private int currentIndex = 0;
+
+	            @Override
+	            public boolean hasNext() {
+	                return currentIndex < currentSize && state.get(currentIndex) != null;
+	            }
+
+	            @Override
+	            public ObjectSerialize next() {
+	            	currentIndex++;
+	                return (ObjectSerialize) state.get(currentIndex - 1);
+	            }
+
+	            @Override
+	            public void remove() {
+	                throw new UnsupportedOperationException();
+	            }
+	        };
+	        return it;
+	    }
+		
 	}
 }
 

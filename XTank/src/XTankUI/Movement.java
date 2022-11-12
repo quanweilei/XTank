@@ -54,16 +54,16 @@ public class Movement implements Command{
     @Override
     public void set(KeyEvent e) {
         String command = "nothing";
-        if ((e.keyCode == 16777220) || (e.character == 'd')){
+        if ((e.keyCode == 16777220) || (e.character == 'd') || (e.character == 'D')){
             command = "right";
         }
-        if ((e.keyCode == 16777219) || (e.character == 'a')){
+        if ((e.keyCode == 16777219) || (e.character == 'a') || (e.character == 'A')){
             command = "left";  
         }
-        if ((e.keyCode == 16777217) || (e.character == 'w')){
+        if ((e.keyCode == 16777217) || (e.character == 'w') || (e.character == 'W')){
             command = "up";
         }
-        if ((e.keyCode == 16777218) || (e.character == 's')){
+        if ((e.keyCode == 16777218) || (e.character == 's') || (e.character == 'S')){
             command = "down";
         }
         this.execute(command);

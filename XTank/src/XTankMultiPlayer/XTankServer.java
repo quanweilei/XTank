@@ -8,7 +8,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
-import BoundCheck.Bounds;
+
 import Serializer.ObjectSerialize;
 import Serializer.Serializer;
 
@@ -28,7 +28,6 @@ public class XTankServer
 	static ArrayList<DataOutputStream> sq;
     private static Serializer ser;
     private static volatile HashMap<Integer, ObjectSerialize> tanks;
-    private static volatile HashMap<Integer, ObjectSerialize> bullets;
     private static HashSet<ObjectSerialize> walls;
     private static HashMap<Socket, Integer> sockets;
     // TODO: implement different spawning, will be done with maze generation
@@ -37,13 +36,11 @@ public class XTankServer
     private static ObjectSerialize started;
     private static ObjectSerialize win;
     private static ObjectSerialize loss;
-    private static Bounds bCheck;
     private static Random random;
     
     public static void main(String[] args) throws Exception 
     {
 		System.out.println(InetAddress.getLocalHost());
-		bCheck = Bounds.getInstance();
 		sq = new ArrayList<>();
         ser = Serializer.getInstance();
         tanks = new HashMap<>();
@@ -51,7 +48,6 @@ public class XTankServer
         walls = new HashSet<>();
         sockets = new HashMap<>();
         random = new Random();
-        bCheck.walls(walls);
         // Temporary spawns
         Integer[] one = new Integer[2];
         one[0] = 300;
@@ -64,10 +60,6 @@ public class XTankServer
         spawnable.add(one);
         spawnable.add(two);
         
-        bCheck.tanks(tanks);
-        // ability to change bounds not implemented, but can be declared here
-        bCheck.setBounds(967, 1904);
-        bullets = new HashMap<>();
         // reset protocol, informs of leaving players
         reset = new ObjectSerialize("null", -1, - 1, -1, -1, -1, -1, -1, -1, -1, 1);
         // start protocol
@@ -77,7 +69,6 @@ public class XTankServer
         // loss protocol
         loss = new ObjectSerialize("lost", -1, - 1, -1, -1, -1, -1, -1, -1, -1, 8);
         var pool = Executors.newFixedThreadPool(20);
-        pool.execute(new Bullets());
         
         try (var listener = new ServerSocket(59896)) 
         {
@@ -112,30 +103,6 @@ public class XTankServer
             }
         }
     }
-    
-    private static class Bullets implements Runnable {
-
-		@Override
-		public void run() {
-			try {
-				while (true) {
-					for (DataOutputStream o: sq) {
-						for (Integer c: bullets.keySet()) {
-                        	o.write(ser.obToByte(bullets.get(c)));
-                        	o.flush();
-                        }
-					}
-					bulletIterate();
-					Thread.sleep(200);
-				}
-			} catch (InterruptedException | IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-    	
-    	
-    }
 
     private static class XTankManager implements Runnable 
     {
@@ -144,6 +111,7 @@ public class XTankServer
         private ArrayList<DataOutputStream> mySers;
         private ObjectSerialize myStat;
         private Integer mySpawn[];
+        private boolean left;
         
         XTankManager(Socket socket, int id, Integer[] mySpawn) { this.socket = socket; this.id = id; mySers = new ArrayList<>(); this.mySpawn = mySpawn;}
 
@@ -161,6 +129,7 @@ public class XTankServer
             	myStat = ser.byteToOb(in.readNBytes(189));
             	mySers.add(out);
                 sq.add(out);
+                left = false;
                 
                 while (true) {
                 	//System.out.println("Player " + id + " waiting");
@@ -186,22 +155,18 @@ public class XTankServer
         			System.out.println("Accepting Object: " + obj);
         			//System.out.println(obj);
                     if (obj.name().contains("Tank")) {
-                    	bCheck.check(obj);
-                    	if (obj != tanks.get(obj.id())) {
+                    	if ((obj != tanks.get(obj.id()))){
                         	tanks.put(obj.id(), obj);
                     	}
                     }
-                    // TODO: bullet hitting terrain and other players, need some way to delete bullets
-                    if (obj.name().equals("bull")) {
-                    	if (obj.id() == -1) {
-                    		int i = getBulletID();
-                        	obj.setID(i);
-                        	bullets.put(getBulletID(), obj);
-                    	}
-                    }
+                    
             	
                 	for (DataOutputStream o: sq)
                 	{
+                		if (obj != null  && obj.name().equals("bull")) {
+                			o.write(ser.obToByte(obj));
+                		}
+
                         for (Integer j: tanks.keySet()) {
                         	if (tanks.get(j) != null) {
                         		o.write(ser.obToByte(tanks.get(j)));
@@ -212,11 +177,14 @@ public class XTankServer
                         	System.out.println("LEFT");
                         	o.write(ser.obToByte(reset));
                         	o.flush();
-                        	reset.setID(-1);
                         }
 
                 	}
-                	Thread.sleep(100);
+                	if (left == true) {
+                		reset.setID(-1);
+                		left = false;
+                	}
+                	Thread.sleep(50);
             }
                 
             } 
@@ -254,27 +222,7 @@ public class XTankServer
         }
         return -1;
     }
-    
-    private static void bulletIterate() {
-    		for (int i = 0; i < bullets.size(); i++) {
-        		if (bullets.containsKey(i)) {
-        			ObjectSerialize curr = bullets.get(i);
-            		curr.setXY(curr.x() + curr.dirX() * 2, curr.y() + curr.dirY() * 2);
-        		}
-        	}
-    	
-    }
-    
-    private static int getBulletID() {
-    	int i = 0;
-    	while (true) {
-    		if (!bullets.containsKey(i)) {
-    			return i;
-    		}
-    		i++;
-    	}
-    }
-    
+
     private static Integer[] randomSpawn() {
     	// TODO: May need to implement check for if tank is in existing spot
     	if (spawnable.size() == 0) {

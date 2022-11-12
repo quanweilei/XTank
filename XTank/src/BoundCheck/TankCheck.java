@@ -37,6 +37,7 @@ public class TankCheck implements BoundCalc{
 
 	@Override
 	public void check() {
+		ObjectSerialize og = tanks.get(obj.id());
 		// First check if tank is going out of bounds
 		ObjectSerialize curr = obj;
 		int currx = curr.x();
@@ -51,6 +52,7 @@ public class TankCheck implements BoundCalc{
 		int gunX = midX + cDirX*7;
 		int gunY = midY + cDirY*7;
 		
+		System.out.println(uiHeight);
 		// If gun goes through left side
 		if (gunX < 0) {
 			obj.setXY((((-cDirX*14) - cWidth)/2), curry);
@@ -76,7 +78,7 @@ public class TankCheck implements BoundCalc{
 		}
 		Rectangle currRec = new Rectangle(currx, curry, cWidth, cHeight);
 
-		
+		System.out.println("CHECK");
 		// Now Check if tank is touching another tank, if it is denies movement
 		for (Integer i: tanks.keySet()) {
 			if ((i != curr.id()) && (tanks.get(i) != null)){
@@ -92,8 +94,7 @@ public class TankCheck implements BoundCalc{
 				System.out.println("Other Tank Coordinates: " + otherX + ", " + otherY + " to " + (otherX + oWidth) + ", " + (otherY + oHeight));
 				if (currRec.intersects(oRec)) 
 				{
-					System.out.println("Intersection, reverted position");
-					obj.setXY(tanks.get(curr.id()).x(), tanks.get(curr.id()).y());
+					obj.set(og);
 				}
 				
 				

@@ -92,8 +92,26 @@ public class ObjectSerialize implements Serializable{
     	this.y = y;
     }
     
+    public void setDir(int x, int y) {
+    	this.dirX = x;
+    	this.dirY = y;
+    }
+    
     public void setStatus(int status) {
     	this.status = status;
+    }
+    
+    public void set(ObjectSerialize copy) {
+    	this.x = copy.x();
+    	this.y = copy.y();
+    	this.name = copy.name();
+    	this.color = copy.color();
+    	this.dirX = copy.dirX;
+    	this.dirY = copy.dirY;
+    	this.status = copy.getStatus();
+    	this.id = copy.id();
+    	this.width = copy.width();
+    	this.height = copy.height();
     }
 
 }
