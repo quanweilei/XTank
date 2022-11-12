@@ -17,6 +17,7 @@ public class TankCheck implements BoundCalc{
 	private static HashSet<ObjectSerialize> walls;
 	private static int uiHeight;
 	private static int uiWidth;
+	private int id;
 	
 	public static TankCheck getInstance() {
 		if (tCheck == null) {
@@ -125,6 +126,11 @@ public class TankCheck implements BoundCalc{
 	@Override
 	public void setTanks(HashMap<Integer, ObjectSerialize> tanks) {
 		TankCheck.tanks = tanks;
+	}
+
+	@Override
+	public void myID(int id) {
+		this.id = id;
 	}
 	
 	

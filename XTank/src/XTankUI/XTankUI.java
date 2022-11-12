@@ -34,7 +34,7 @@ public class XTankUI
 	private int width;
 	private int height;
 	private int hp;
-	private static int id;
+	private int id;
 	private static ObjectSerialize myStat;
 
 	private static Canvas canvas;
@@ -61,7 +61,7 @@ public class XTankUI
 		System.out.println("This Client is Player " + id);
 		this.in = in;
 		this.out = out;
-		XTankUI.id = id;
+		this.id = id;
 		x = startx;
 		y = starty;
 		color = SWT.COLOR_DARK_GREEN;
@@ -79,6 +79,7 @@ public class XTankUI
 		bounds.setBounds(967, 1904);
 		bounds.tanks(tanks);
 		bounds.walls(walls);
+		bounds.setID(id);
 		// TODO: OPTION FOR HP
 		hp = 3;
 		myStat = new ObjectSerialize("plyr", -1, -1, -1, -1, -1, -1, -1, -1, -1, start);
@@ -161,10 +162,19 @@ public class XTankUI
 				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
 				event.gc.drawText("Player " + String.valueOf(id), midX, midY + cHeight);
 			}
+			
+			if (hp == 0) {
+				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
+				Rectangle c = canvas.getBounds();
+				event.gc.drawText("YOU DIED", c.width/2, c.height/2);
+			}
 		});	
 
 		canvas.addMouseListener(new MouseListener() {
 			public void mouseDown(MouseEvent e) {
+				if (hp == 0) {
+					canvas.removeMouseListener(this);
+				}
 				fireHandler.set(e);
 			}
 			public void mouseUp(MouseEvent e) {} 
@@ -173,7 +183,10 @@ public class XTankUI
 
 		canvas.addKeyListener(new KeyListener() {
 			public void keyPressed(KeyEvent e) {
-				if ((e.character == 'f') || (e.character == 'F')){
+				if (hp == 0) {
+					canvas.removeKeyListener(this);
+				}
+				if ((e.character == 'f') || (e.character == 'F') || (e.character == ' ')){
 					fireHandler.set(e);
 				}
 				else {
@@ -182,6 +195,7 @@ public class XTankUI
 					try {
 						ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height, hp);
 						out.write(ser.obToByte(bounds.check(obj)));
+						out.flush();
 					}
 					catch(IOException ex) {
 						System.out.println("The server did not respond (write KL).");
@@ -197,11 +211,9 @@ public class XTankUI
 		settings(shell);
 		
 		try {
-			if (tanks.get(id) == null) {
-				ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height, hp);
-				System.out.println("Sending out Object of Length: " + ser.obToByte(obj).length);
-				out.write(ser.obToByte(obj));
-			}
+			ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height, hp);
+			System.out.println("Sending out Object of Length: " + ser.obToByte(obj).length);
+			out.write(ser.obToByte(obj));
 		}
 		catch(IOException ex) {
 			System.out.println("The server did not respond (initial write).");
@@ -374,21 +386,14 @@ public class XTankUI
 		return this.color;
 	}
 	
-	protected void fired(ObjectSerialize bull) throws IOException {
-		System.out.println(bull.getStatus());
+	void fired(ObjectSerialize bull) throws IOException {
 		out.write(ser.obToByte(bull));
 		out.flush();
 	}
 	
-	private static int getBulletID() {
-    	int i = 0;
-    	while (true) {
-    		if (!bullets.containsKey(i)) {
-    			return i;
-    		}
-    		i++;
-    	}
-    }
+	void gotHit() {
+		hp--;
+	}
 	
 	
 	class Runner implements Runnable
@@ -406,13 +411,17 @@ public class XTankUI
 								x = obj.x();
 								y = obj.y();
 							}
-							tanks.put(obj.id(), obj);
+							System.out.println(obj.getStatus());
+							if (obj.getStatus() <= 0) {
+								tanks.remove(obj.id());
+							}
+							else {
+								tanks.put(obj.id(), obj);
+							}
 						}
 						
-						if (obj.name().equals("bull")) {
-							if (!bullets.containsKey(obj.id())) {
-								bullets.put(getBulletID(), obj);
-							}
+						if ((obj.name().equals("bull"))) {
+							bullets.put(obj.hashCode(), obj);
 						}
 					}
 					else {
@@ -441,15 +450,19 @@ public class XTankUI
 				ObjectSerialize curr = (ObjectSerialize) bIt.next();
 				curr.setXY(curr.x() + curr.dirX() * 2, curr.y() + curr.dirY() * 2);
 				bounds.check(curr);
-				if (curr.getStatus() == 0) {
-					bullets.remove(curr.id());
-
+				if (curr.getStatus() == 0){
+					System.out.println("Removing Bullet: " + curr);
+					bullets.remove(curr.hashCode());
+				}
+				if (curr.getStatus() == -1) {
+					System.out.println("I was hit");
+					bullets.remove(curr.hashCode());
+					hp--;
 				}
 			}
 			
 			canvas.redraw();
 			display.timerExec(100, this);
-			
 		}
     	
     	
@@ -477,7 +490,7 @@ public class XTankUI
 				public void widgetSelected(SelectionEvent arg0) {
 					System.out.println("Changing tank color to: " + name);
 					color = c;
-					ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height, 1);
+					ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height, hp);
 					try {
 						out.write(ser.obToByte(obj));
 					} catch (IOException e) {
@@ -510,7 +523,7 @@ public class XTankUI
 				public void widgetSelected(SelectionEvent arg0) {
 					System.out.println("Changing tank gun to: " + name);
 					gun = c;
-					ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height, 1);
+					ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height, hp);
 					try {
 						out.write(ser.obToByte(obj));
 					} catch (IOException e) {
@@ -557,6 +570,7 @@ public class XTankUI
 	    }
 		
 	}
+	
 }
 
 

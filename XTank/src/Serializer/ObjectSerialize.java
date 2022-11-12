@@ -31,11 +31,12 @@ public class ObjectSerialize implements Serializable{
         this.id = id;
         this.width = width;
         this.height = height;
+        this.status = status;
     }
-    
-    @Override
+
+	@Override
     public String toString() {
-        return "ID: " + id + ", " + name + " at {" + x + ", " + y + "}, Dimensions: {" + width + ", " + height + "}, Direction: {" + dirX + ", " + dirY + "}";
+        return "ID: " + id + ", " + name + " at {" + x + ", " + y + "}, Dimensions: {" + width + ", " + height + "}, Direction: {" + dirX + ", " + dirY + "}, Status: " + status;
     }
 
     public String name() {

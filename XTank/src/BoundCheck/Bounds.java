@@ -13,6 +13,7 @@ public class Bounds {
 	private static HashSet<ObjectSerialize> walls;
 	private static TankCheck tCheck;
 	private static BulletCheck bCheck;
+	private int myId;
 	
 	public static Bounds getInstance() {
 		if (bounds == null) {
@@ -58,5 +59,9 @@ public class Bounds {
 		bCheck.setUIBounds(uiHeight, uiWidth);
 	}
 	
-
+	public void setID(int id) {
+		myId = id;
+		tCheck.myID(id);
+		bCheck.myID(id);
+	}
 }

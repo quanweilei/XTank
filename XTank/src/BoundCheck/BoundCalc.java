@@ -13,4 +13,5 @@ public interface BoundCalc {
 	public void setObj(ObjectSerialize obj);
 	public ObjectSerialize getObj();
 	public void check();
+	public void myID(int id);
 }

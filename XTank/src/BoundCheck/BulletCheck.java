@@ -3,6 +3,8 @@ package BoundCheck;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import org.eclipse.swt.graphics.Rectangle;
+
 import Serializer.ObjectSerialize;
 
 public class BulletCheck implements BoundCalc{
@@ -14,6 +16,7 @@ public class BulletCheck implements BoundCalc{
 	private static HashSet<ObjectSerialize> walls;
 	private static int uiHeight;
 	private static int uiWidth;
+	private static int id;
 	
 	public static BulletCheck getInstance() {
 		if (tCheck == null) {
@@ -51,30 +54,47 @@ public class BulletCheck implements BoundCalc{
 		// If bullet goes through left side
 		if (bulltX < 0) {
 			obj.setStatus(0);
-			return;
 		}
 		
 		// If bullet goes through right side
-		if (bulltX + 10 > uiWidth) {
+		if (bulltX > uiWidth) {
 			obj.setStatus(0);
-			return;
 		}
 		
 		// If bullet goes through top
 		if (bulltY < 0) {
 			obj.setStatus(0);
-			return;
 		}
 		
 		// If bullet goes through bottom
-		if (bulltY + 10 > uiHeight) {
+		if (bulltY > uiHeight) {
 			obj.setStatus(0);
-			return;
 		}
 		
+		// Wall Check
 		
-		
-		System.out.println("Bound Checking Bullet: " + obj);
+		// Check directly if my tank was hit
+
+		Rectangle bullet = new Rectangle(bulltX, bulltY, 10,10);
+		for (Integer k: tanks.keySet()) {
+			ObjectSerialize cTank = tanks.get(k);
+			if (cTank != null) {
+				Rectangle cTankR = new Rectangle(cTank.x(), cTank.y(), cTank.width(), cTank.height());
+				if (cTankR.intersects(bullet)) {
+					if (cTank.id() == id) {
+						System.out.println("I got hit");
+						obj.setStatus(-1);
+					}
+					else {
+						System.out.println("Other player got hit");
+						obj.setStatus(0);
+					}
+				}
+			}
+			
+		}
+
+
 	}
 
 	@Override
@@ -95,8 +115,12 @@ public class BulletCheck implements BoundCalc{
 
 	@Override
 	public void setTanks(HashMap<Integer, ObjectSerialize> tanks) {
-		// TODO Auto-generated method stub
-		
+		BulletCheck.tanks = tanks;
+	}
+
+	@Override
+	public void myID(int id) {
+		BulletCheck.id = id;
 	}
 
 }

@@ -8,6 +8,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
+import javax.management.timer.Timer;
 
 import Serializer.ObjectSerialize;
 import Serializer.Serializer;
@@ -121,15 +122,13 @@ public class XTankServer
             System.out.println("Connected: " + socket);
             try 
             {
-            	myStat = new ObjectSerialize(null, id, id, id, id, id, id, id, id, id, id);
-            	tanks.put(id, null);
-            	
             	DataInputStream in = new DataInputStream(socket.getInputStream());
             	DataOutputStream out = new DataOutputStream(socket.getOutputStream());
             	myStat = ser.byteToOb(in.readNBytes(189));
             	mySers.add(out);
                 sq.add(out);
                 left = false;
+                tanks.put(id, null);
                 
                 while (true) {
                 	//System.out.println("Player " + id + " waiting");
@@ -155,24 +154,21 @@ public class XTankServer
         			System.out.println("Accepting Object: " + obj);
         			//System.out.println(obj);
                     if (obj.name().contains("Tank")) {
-                    	if ((obj != tanks.get(obj.id()))){
-                        	tanks.put(obj.id(), obj);
+                    	tanks.put(obj.id(), obj);
+                    	for (DataOutputStream o: sq) {
+                    		o.write(ser.obToByte(obj));
                     	}
                     }
+                    
+                    if (obj != null  && obj.name().equals("bull")) {
+            			for (DataOutputStream o: sq) {
+            				o.write(ser.obToByte(obj));
+            			}
+            		}
                     
             	
                 	for (DataOutputStream o: sq)
                 	{
-                		if (obj != null  && obj.name().equals("bull")) {
-                			o.write(ser.obToByte(obj));
-                		}
-
-                        for (Integer j: tanks.keySet()) {
-                        	if (tanks.get(j) != null) {
-                        		o.write(ser.obToByte(tanks.get(j)));
-	                            o.flush();
-                        	}
-                        }
                         if (reset.id() != -1) {
                         	System.out.println("LEFT");
                         	o.write(ser.obToByte(reset));
@@ -184,8 +180,9 @@ public class XTankServer
                 		reset.setID(-1);
                 		left = false;
                 	}
-                	Thread.sleep(50);
+                	Thread.sleep(100);
             }
+                
                 
             } 
             catch (Exception e) 

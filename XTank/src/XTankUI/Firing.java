@@ -2,6 +2,7 @@ package XTankUI;
 
 import java.io.IOException;
 
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.MouseEvent;
 
@@ -30,7 +31,7 @@ public class Firing implements Command {
 
 	@Override
 	public void set(KeyEvent e) {
-		if ((e.character == 'f') || (e.character == 'F')){
+		if ((e.character == 'f') || (e.character == 'F') || (e.character == SWT.SPACE)){
 			this.execute("fire");
 		}
 	}
