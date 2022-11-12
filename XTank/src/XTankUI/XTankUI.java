@@ -428,8 +428,9 @@ public class XTankUI
 							System.out.println(obj.getStatus());
 							if (obj.getStatus() <= 0) {
 								tanks.remove(obj.id());
-								if ((tanks.size() == 1) && (hp > 0)){
+								if (tanks.size() == 1 && tanks.containsKey(id) && hp > 0) {
 									win = true;
+									canvas.redraw();
 								}
 							}
 							else {
@@ -457,7 +458,7 @@ public class XTankUI
 	};	
 	
     private class Bullets implements Runnable {
-
+    	
 		@Override
 		public void run() {
 			@SuppressWarnings("rawtypes")
@@ -470,17 +471,27 @@ public class XTankUI
 				if (curr.getStatus() == 0){
 					System.out.println("Removing Bullet: " + curr);
 					bullets.remove(curr.hashCode());
+
 				}
 				if (curr.getStatus() == -1) {
 					System.out.println("I was hit");
 					bullets.remove(curr.hashCode());
 					hp--;
-					if (hp == 0) {
-						loss = true;
-					}
-					canvas.redraw();
 				}
 			}
+			if (hp == 0) {
+				loss = true;
+				tanks.remove(id);
+				ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height, hp);
+				try {
+					System.out.println("Sending out Object of Length: " + ser.obToByte(obj).length);
+					out.write(ser.obToByte(obj));
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+
 			
 			canvas.redraw();
 			display.timerExec(100, this);
