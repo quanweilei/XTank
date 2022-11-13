@@ -11,6 +11,7 @@ import java.util.stream.IntStream;
 
 import javax.management.timer.Timer;
 
+import Mazes.Maze;
 import Serializer.ObjectSerialize;
 import Serializer.Serializer;
 
@@ -30,10 +31,11 @@ public class XTankServer
 	static ArrayList<DataOutputStream> sq;
     private static Serializer ser;
     private static volatile HashMap<Integer, ObjectSerialize> tanks;
-    private static HashSet<ObjectSerialize> walls;
+    private static Maze walls;
     private static HashMap<Socket, Integer> sockets;
     // TODO: implement different spawning, will be done with maze generation
     private static ArrayList<Integer[]> spawnable;
+    
     private static volatile ObjectSerialize reset;
     private static ObjectSerialize started;
     private static Random random;
@@ -46,7 +48,7 @@ public class XTankServer
         ser = Serializer.getInstance();
         tanks = new HashMap<>();
         spawnable = new ArrayList<>();
-        walls = new HashSet<>();
+        walls = new Maze();
         sockets = new HashMap<>();
         random = new Random();
         // Temporary spawns

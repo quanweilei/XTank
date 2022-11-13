@@ -7,20 +7,19 @@ import org.eclipse.swt.layout.*;
 import org.eclipse.swt.widgets.*;
 
 import BoundCheck.Bounds;
+import Mazes.Maze;
 import Serializer.ObjectSerialize;
 import Serializer.Serializer;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
+
 
 public class XTankUI
 {
@@ -61,6 +60,7 @@ public class XTankUI
 	private boolean ended;
 	
 	private Bounds bounds;
+	private Maze maze;
 	
 	
 	public XTankUI(DataInputStream in, DataOutputStream out, int id) throws IOException, InterruptedException, ClassNotFoundException
@@ -71,6 +71,7 @@ public class XTankUI
 		this.in = in;
 		this.out = out;
 		XTankUI.id = id;
+
 		tanks = new HashMap<>();
 		bullets = new HashMap<>();
 		
@@ -184,6 +185,15 @@ public class XTankUI
 				event.gc.fillOval(midX + cDirX*9 + 25, midY + cDirY*9 + 25, 10, 10);
 				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
 			}
+			
+			/*
+			 * for (Integer[] wall: maze.spawns()) {
+				event.gc.setForeground(shell.getDisplay().getSystemColor(SWT.COLOR_BLUE));
+				event.gc.drawLine(wall[0], wall[1], wall[2], wall[3]);
+				event.gc.setForeground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
+			}
+			 */
+
 			
 			// Print out name tags
 			for (Integer id: tanks.keySet()) {
