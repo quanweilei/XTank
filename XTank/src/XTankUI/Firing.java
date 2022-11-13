@@ -17,6 +17,7 @@ public class Firing implements Command {
 	private int x;
 	private int y;
 	
+	// returns an instance of Firing
 	public static Command getInstance() {
 		if (f == null) {
 			f = new Firing();
@@ -24,11 +25,13 @@ public class Firing implements Command {
 		return f;
 	}
 	
+	// connect to UI
 	@Override
 	public void connect(XTankUI ui) {
 		this.ui = ui;
 	}
-
+	
+	// set Keyevent
 	@Override
 	public void set(KeyEvent e) {
 		if ((e.character == 'f') || (e.character == 'F') || (e.character == SWT.SPACE)){
@@ -36,11 +39,13 @@ public class Firing implements Command {
 		}
 	}
 	
+	// set mouseevent
 	public void set(MouseEvent e) {
 		System.out.println("mouseDown in canvas at " + e.x + ", " + e.y);
 		this.execute("fire");
 	}
-
+	
+	// execute firing
 	@Override
 	public void execute(String command) {
 		int[] l = ui.getLoc();

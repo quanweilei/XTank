@@ -4,6 +4,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import Serializer.ObjectSerialize;
 
+/*
+ * Quanwei Lei
+ * Interface for Bound calculation
+ */
 public interface BoundCalc {
 	public void setUIBounds(int height, int width);
 	public void setWalls(ArrayList<ObjectSerialize> walls);

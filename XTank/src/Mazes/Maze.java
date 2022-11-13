@@ -1,17 +1,16 @@
 package Mazes;
 
-import java.math.MathContext;
+
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Random;
 
 import org.eclipse.swt.graphics.Rectangle;
 
 import Serializer.ObjectSerialize;
-
+/*
+ * Ellie Martin QUanwei Lei
+ * Generates a maze randomly, calculates the spawns for tanks
+ */
 public class Maze implements MazeFactory {
 
 	private ArrayList<Integer[]> spawns;
@@ -23,7 +22,8 @@ public class Maze implements MazeFactory {
 		spawns = new ArrayList<Integer[]>();
 		wallBound = new ArrayList<>();
 		rGenerate();
-	}
+	}	
+	// return spawns
 	@Override
 	public ArrayList<Integer[]> spawns() {
 		return spawns;
@@ -80,7 +80,8 @@ public class Maze implements MazeFactory {
 		
 		
 	}
-
+	
+	// returns the wall objects
 	@Override
 	public ArrayList<ObjectSerialize> walls() {
 		return wallObj;

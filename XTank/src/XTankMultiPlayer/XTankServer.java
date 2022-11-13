@@ -99,6 +99,9 @@ public class XTankServer
         }
     }
     
+    /*
+     * XTankManager is used to manage tanks, sends and recieves all data needed for tanks, bullets, and game status
+     */
     private static class XTankManager implements Runnable 
     {
         private Socket socket;
@@ -154,6 +157,7 @@ public class XTankServer
             left = false;
 
             
+            // starting screen
             while (true) {
             	
             	if (in.available() > 0) {
@@ -174,11 +178,13 @@ public class XTankServer
             
             
             System.out.println("Player " + id + " in game");
+            // player should be in game by here
             while (true)
             {
     			ObjectSerialize obj = ser.byteToOb(in.readNBytes(189));
     			System.out.println(obj);
     			if (obj.name().equals("endg")) {
+    				// end of game
     				System.out.println(tanks.size());
     				Thread.sleep(3000 + id * 40);
     				started.setStatus(0);
@@ -195,6 +201,7 @@ public class XTankServer
     			}
     			System.out.println("Accepting Object: " + obj);
     			//System.out.println(obj);
+    			// send out tanks
                 if (obj.name().contains("Tank")) {
                 	tanks.put(obj.id(), obj);
                 	for (DataOutputStream o: sq) {
@@ -203,12 +210,14 @@ public class XTankServer
                 }
                 
                 if (obj != null  && obj.name().equals("bull")) {
+                	// send out bullets
         			for (DataOutputStream o: sq) {
         				o.write(ser.obToByte(obj));
         			}
         		}
                 
-        	
+                
+                // send out reset id for leaving 
             	for (DataOutputStream o: sq)
             	{
                     if (reset.id() != -1) {
@@ -218,6 +227,7 @@ public class XTankServer
                     }
 
             	}
+            	// reset reset
             	if (left == true) {
             		reset.setID(-1);
             		left = false;
@@ -227,6 +237,7 @@ public class XTankServer
 
             
 		}
+		
 		
 		private void leave() throws Exception {
 			try { spawnable.add(mySpawn); sockets.remove(socket); reset.setID(id); tanks.remove(id); sq.removeAll(mySers); socket.close(); } 
@@ -240,7 +251,10 @@ public class XTankServer
     }
     
     
-
+    
+    /*
+     * returns an ID that is not in use by tanks
+     */
     private static int getAvailableID() {
         for (int i = 1; i < 21; i++) {
             if (!tanks.containsKey(i)) {
@@ -249,7 +263,10 @@ public class XTankServer
         }
         return -1;
     }
-
+    
+    /*
+     * returns a random spawn from spawns
+     */
     private static Integer[] randomSpawn() {
     	// TODO: May need to implement check for if tank is in existing spot
     	if (spawnable.size() == 0) {

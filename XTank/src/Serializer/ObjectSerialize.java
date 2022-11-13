@@ -7,9 +7,7 @@ import javax.print.attribute.PrintServiceAttribute;
  * ObjectSerialize serializes all needed for information for every object needed in the game.
  */
 public class ObjectSerialize implements Serializable{
-    /**
-	 * 
-	 */
+
 	private static final long serialVersionUID = 13505695996255119L;
 	private String name;
     private int x;
@@ -23,7 +21,9 @@ public class ObjectSerialize implements Serializable{
     private int height;
     private int status;
 
-
+    /*
+     * Initiates ObjectSerialize, sets up all info needed to be sent accross
+     */
     public ObjectSerialize(String name, int x, int y, int color, int gun, int dirX, int dirY, int id, int width, int height, int status) {
         this.name = name;
         this.x = x;
@@ -42,43 +42,53 @@ public class ObjectSerialize implements Serializable{
     public String toString() {
         return "ID: " + id + ", " + name + " at {" + x + ", " + y + "}, Dimensions: {" + width + ", " + height + "}, Direction: {" + dirX + ", " + dirY + "}, Status: " + status;
     }
-
+	
+	// ret name
     public String name() {
         return this.name;
     }
-
+    
+    // ret x
     public int x(){
         return this.x;
     }
-
+    
+    // ret y
     public int y() {
         return this.y;
     }
-
+    
+    // ret color
     public int color() {
         return this.color;
     }
-
+    
+    // ret gun
     public int gun() {
         return this.gun;
     }
-
+    
+    // ret direction (x)
     public int dirX() {
         return this.dirX;
     }
 
+    // ret direction (y)
     public int dirY() {
         return this.dirY;
     }
 
+    // ret id
     public int id() {
         return this.id;
     }
-
+    
+    // ret width
     public int width() {
         return this.width;
     }
-
+    
+    // ret height
     public int height() {
         return this.height;
     }
@@ -88,24 +98,30 @@ public class ObjectSerialize implements Serializable{
     	return this.status;
     }
     
+    
+    // sets id of the given object
     public void setID(int id) {
     	this.id = id;
     }
     
+    // sets the x y coord of given object
     public void setXY(int x, int y) {
     	this.x = x;
     	this.y = y;
     }
     
+    // sets the direction of given object
     public void setDir(int x, int y) {
     	this.dirX = x;
     	this.dirY = y;
     }
     
+    // sets the status of the given object
     public void setStatus(int status) {
     	this.status = status;
     }
     
+    // sets the object to another
     public void set(ObjectSerialize copy) {
     	this.x = copy.x();
     	this.y = copy.y();

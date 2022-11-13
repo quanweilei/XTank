@@ -16,10 +16,12 @@ public class TankCheck implements BoundCalc{
 	private static ObjectSerialize obj;
 	private static HashMap<Integer, ObjectSerialize> tanks;
 	private static ArrayList<ObjectSerialize> walls;
+	private static ArrayList<Rectangle> wallBounds;
 	private static int uiHeight;
 	private static int uiWidth;
 	private int id;
 	
+	// Returns instance of TankCheck
 	public static TankCheck getInstance() {
 		if (tCheck == null) {
 			tCheck = new TankCheck();
@@ -27,16 +29,19 @@ public class TankCheck implements BoundCalc{
 		return tCheck;
 	}
 	
+	// Set the ObjectSerialize to given
 	@Override
 	public void setObj(ObjectSerialize obj) {
 		TankCheck.obj = obj;
 	}
-
+	
+	// returns the object after processing
 	@Override
 	public ObjectSerialize getObj() {
 		return obj;
 	}
-
+	
+	// checks the object
 	@Override
 	public void check() {
 		ObjectSerialize og = tanks.get(obj.id());
@@ -79,6 +84,13 @@ public class TankCheck implements BoundCalc{
 			return;
 		}
 		Rectangle currRec = new Rectangle(currx, curry, cWidth, cHeight);
+		// Check if touching wall
+		for (Rectangle r: wallBounds) {
+			if (currRec.intersects(r)) {
+				obj.set(og);
+				return;
+			}
+		}
 
 		System.out.println("CHECK");
 		// Now Check if tank is touching another tank, if it is denies movement
@@ -104,28 +116,43 @@ public class TankCheck implements BoundCalc{
 		
 		System.out.println("Bound Checking Tank: " + obj);
 	}
-
+	
+	// setUIBounds sets the bounds for the ui so that tank can be seen when border 
 	@Override
 	public void setUIBounds(int height, int width) {
 		uiHeight = height;
 		uiWidth = width;
 	}
-
+	
+	// sets the walls to the given walls, generates rectangles for every wall
 	@Override
 	public void setWalls(ArrayList<ObjectSerialize> walls) {
 		TankCheck.walls = walls;
+		wallBounds = new ArrayList<>();
+		for (ObjectSerialize w: walls) {
+			if (w.x() == w.dirX()) {
+				wallBounds.add(new Rectangle(w.x(), Math.min(w.y(), w.dirY()), 10, Math.max(w.y(), w.dirY()) - Math.min(w.y(), w.dirY())));
+			}
+			if (w.y() == w.dirY()) {
+				wallBounds.add(new Rectangle(Math.min(w.x(), w.dirX()), w.y(), Math.max(w.x(), w.dirX()) - Math.min(w.x(), w.dirX()), 10));
+			}
+		}
 	}
-
+	
+	
+	// sets the target to a given hashmap of tanks
 	@Override
 	public void setTarget(HashMap<Integer, ObjectSerialize> tanks) {
 		TankCheck.tanks = tanks;
 	}
-
+	
+	// sets the tanks 
 	@Override
 	public void setTanks(HashMap<Integer, ObjectSerialize> tanks) {
 		TankCheck.tanks = tanks;
 	}
-
+	
+	// my id
 	@Override
 	public void myID(int id) {
 		this.id = id;

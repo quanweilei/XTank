@@ -3,19 +3,25 @@ package XTankUI;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.KeyEvent;
 
+/*
+ * Quanwei Lei
+ */
 public class Movement implements Command{
     private XTankUI ui;
     private static Movement processor = new Movement();
 
+    // get command
     public static Command get() {
         return processor;
     }
-
+    
+    // connect ui
     @Override
     public void connect(XTankUI ui) {
         this.ui = ui;
     }
-
+    
+    // executes command
     @Override
     public void execute(String command) {
         // TODO: possibly add diagonal movement, currently there is only rigid left right down up movement
@@ -50,7 +56,8 @@ public class Movement implements Command{
             ui.setDir(0, 10);
         }
     }
-
+    
+    // sets the keyevent, processes into command, then executes
     @Override
     public void set(KeyEvent e) {
         String command = "nothing";

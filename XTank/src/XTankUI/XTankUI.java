@@ -102,6 +102,7 @@ public class XTankUI
 		//moveHandler = Movement.get();
 	}
 	
+	// resets the current client
 	public void reset() throws IOException, ClassNotFoundException {
         System.out.println("This Client is Player " + id);
 		ObjectSerialize temp = ser.byteToOb(in.readNBytes(189));
@@ -135,6 +136,7 @@ public class XTankUI
 		fireHandler.connect(this);
 	}
 	
+	// starts the current clients game
 	public void start() throws InterruptedException
 	{
 		Shell shell = new Shell(display);
@@ -213,7 +215,7 @@ public class XTankUI
 
 		canvas.addMouseListener(new MouseListener() {
 			public void mouseDown(MouseEvent e) {
-				if (ended == false || (win) || (loss)) {
+				if (ended == false) {
 					fireHandler.set(e);
 				}
 			}
@@ -223,7 +225,7 @@ public class XTankUI
 
 		canvas.addKeyListener(new KeyListener() {
 			public void keyPressed(KeyEvent e) {
-				if ((ended == false) || (win) || (loss)){
+				if (ended == false) {
 					if ((e.character == 'f') || (e.character == 'F') || (e.character == ' ')){
 						fireHandler.set(e);
 					}
@@ -424,6 +426,7 @@ public class XTankUI
 		return d;
 	}
 	
+	// returns location
 	public int[] getLoc() {
 		int[] d = new int[2];
 		d[0] = x;
@@ -431,15 +434,18 @@ public class XTankUI
 		return d;
 	}
 	
+	// returns color
 	public int getColor() {
 		return this.color;
 	}
 	
+	// this tank fired
 	void fired(ObjectSerialize bull) throws IOException {
 		out.write(ser.obToByte(bull));
 		out.flush();
 	}
 	
+	// you got hit
 	void gotHit() {
 		hp--;
 	}
@@ -464,6 +470,7 @@ public class XTankUI
 					}
 					if (obj.name().equals("Tank") || (obj.name().equals("bull"))) {
 						if (obj.name().equals("Tank")) {
+							tanks.put(obj.id(), obj);
 							if (obj.id() == id) {
 								x = obj.x();
 								y = obj.y();
@@ -477,13 +484,10 @@ public class XTankUI
 									shell.update();
 									win = true;
 									canvas.redraw();
+									ObjectSerialize end = new ObjectSerialize("endg", color, color, color, color, color, color, color, color, color, color);
+									out.write(ser.obToByte(end));
+									out.flush();
 								}
-								ObjectSerialize end = new ObjectSerialize("endg", color, color, color, color, color, color, color, color, color, color);
-								out.write(ser.obToByte(end));
-								out.flush();
-							}
-							else {
-								tanks.put(obj.id(), obj);
 							}
 							canvas.redraw();
 						}

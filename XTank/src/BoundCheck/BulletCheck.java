@@ -8,6 +8,10 @@ import org.eclipse.swt.graphics.Rectangle;
 
 import Serializer.ObjectSerialize;
 
+/*
+ * Quanwei Lei
+ * BulletCheck checks if a bullet still exists, as it hits walls or tanks or borders
+ */
 public class BulletCheck implements BoundCalc{
 
 	private static BulletCheck tCheck = null;
@@ -20,6 +24,7 @@ public class BulletCheck implements BoundCalc{
 	private static int uiWidth;
 	private static int id;
 	
+	// returns an instance of bulletcheck
 	public static BulletCheck getInstance() {
 		if (tCheck == null) {
 			tCheck = new BulletCheck();
@@ -27,16 +32,19 @@ public class BulletCheck implements BoundCalc{
 		return tCheck;
 	}
 	
+	// sets object to a given object for checking
 	@Override
 	public void setObj(ObjectSerialize obj) {
 		BulletCheck.obj = obj;
 	}
-
+	
+	// returns the object
 	@Override
 	public ObjectSerialize getObj() {
 		return obj;
 	}
-
+	
+	// checks the given object, and then sets the status if it exists still
 	@Override
 	public void check() {
 		// First check if bullet is going out of bounds
@@ -102,13 +110,15 @@ public class BulletCheck implements BoundCalc{
 
 
 	}
-
+	
+	// sets the ui bounds 
 	@Override
 	public void setUIBounds(int height, int width) {
 		uiHeight = height;
 		uiWidth = width;
 	}
-
+	
+	// sets the walls, also initiates the walls as rectangles for bound check
 	@Override
 	public void setWalls(ArrayList<ObjectSerialize> walls) {
 		BulletCheck.walls = walls;
@@ -123,17 +133,20 @@ public class BulletCheck implements BoundCalc{
 		}
 		
 	}
-
+	
+	// sets the target to bullets
 	@Override
 	public void setTarget(HashMap<Integer, ObjectSerialize> bullets) {
 		BulletCheck.bullets = bullets;
 	}
-
+	
+	// sets the world tanks
 	@Override
 	public void setTanks(HashMap<Integer, ObjectSerialize> tanks) {
 		BulletCheck.tanks = tanks;
 	}
-
+	
+	// sets my id
 	@Override
 	public void myID(int id) {
 		BulletCheck.id = id;
