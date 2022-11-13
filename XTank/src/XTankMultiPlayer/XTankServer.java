@@ -55,17 +55,9 @@ public class XTankServer
         sockets = new HashMap<>();
         random = new Random();
         // Temporary spawns
-        Integer[] one = new Integer[2];
-        one[0] = 300;
-        one[1] = 800;
-        
-        Integer[] two = new Integer[2];
-        two[0] = 300;
-        two[1] = 200;
-        
-        spawnable.add(one);
-        spawnable.add(two);
-        
+        spawnable = maze.spawns();
+        System.out.println("Generated Maze");
+        System.out.println(spawnable.size());
         // reset protocol, informs of leaving players
         reset = new ObjectSerialize("null", -1, - 1, -1, -1, -1, -1, -1, -1, -1, 1);
         // start protocol
@@ -187,6 +179,7 @@ public class XTankServer
     			ObjectSerialize obj = ser.byteToOb(in.readNBytes(189));
     			System.out.println(obj);
     			if (obj.name().equals("endg")) {
+    				System.out.println(tanks.size());
     				Thread.sleep(3000 + id * 40);
     				started.setStatus(0);
     				spawnable.add(mySpawn);

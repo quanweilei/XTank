@@ -193,7 +193,6 @@ public class XTankUI
 			for (ObjectSerialize wall: walls) {
 				event.gc.setForeground(shell.getDisplay().getSystemColor(SWT.COLOR_BLUE));
 				event.gc.drawLine(wall.x(), wall.y(), wall.dirX(), wall.dirY());
-				event.gc.setForeground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
 			}
 
 			
@@ -207,6 +206,7 @@ public class XTankUI
 				int midX = ((2 * currx + cWidth)/2) - 25;
 				int midY = ((2 * curry + cHeight)/2) - 25;
 				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
+				event.gc.setForeground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
 				event.gc.drawText("Player " + String.valueOf(id), midX, midY + cHeight);
 			}
 		});	
@@ -471,7 +471,8 @@ public class XTankUI
 							System.out.println(obj.getStatus());
 							if (obj.getStatus() <= 0) {
 								tanks.remove(obj.id());
-								if (tanks.size() == 1 && tanks.containsKey(id) && hp > 0) {
+								System.out.println(tanks.size());
+								if (tanks.size() <= 1 && tanks.containsKey(id) && hp > 0) {
 									shell.setText("You Won!");
 									shell.update();
 									win = true;

@@ -14,6 +14,7 @@ public class BulletCheck implements BoundCalc{
 	private static ObjectSerialize obj;
 	private static HashMap<Integer, ObjectSerialize> bullets;
 	private static HashMap<Integer, ObjectSerialize> tanks;
+	private static ArrayList<Rectangle> wallBounds;
 	private static ArrayList<ObjectSerialize> walls;
 	private static int uiHeight;
 	private static int uiWidth;
@@ -71,12 +72,16 @@ public class BulletCheck implements BoundCalc{
 		if (bulltY > uiHeight) {
 			obj.setStatus(0);
 		}
-		
+		Rectangle bullet = new Rectangle(bulltX, bulltY, 10,10);
 		// Wall Check
+		for (Rectangle r: wallBounds) {
+			if (bullet.intersects(r)) {
+				obj.setStatus(0);
+				return;
+			}
+		}
 		
 		// Check directly if my tank was hit
-
-		Rectangle bullet = new Rectangle(bulltX, bulltY, 10,10);
 		for (Integer k: tanks.keySet()) {
 			ObjectSerialize cTank = tanks.get(k);
 			if (cTank != null) {
@@ -107,6 +112,16 @@ public class BulletCheck implements BoundCalc{
 	@Override
 	public void setWalls(ArrayList<ObjectSerialize> walls) {
 		BulletCheck.walls = walls;
+		wallBounds = new ArrayList<>();
+		for (ObjectSerialize w: walls) {
+			if (w.x() == w.dirX()) {
+				wallBounds.add(new Rectangle(w.x(), Math.min(w.y(), w.dirY()), 10, Math.max(w.y(), w.dirY()) - Math.min(w.y(), w.dirY())));
+			}
+			if (w.y() == w.dirY()) {
+				wallBounds.add(new Rectangle(Math.min(w.x(), w.dirX()), w.y(), Math.max(w.x(), w.dirX()) - Math.min(w.x(), w.dirX()), 10));
+			}
+		}
+		
 	}
 
 	@Override
