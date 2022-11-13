@@ -1,5 +1,6 @@
 package BoundCheck;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -10,7 +11,7 @@ public class Bounds {
 	private static int uiHeight;
 	private static int uiWidth;
 	private static HashMap<Integer, ObjectSerialize> tanks;
-	private static HashSet<ObjectSerialize> walls;
+	private static ArrayList<ObjectSerialize> walls;
 	private static TankCheck tCheck;
 	private static BulletCheck bCheck;
 	private int myId;
@@ -46,7 +47,7 @@ public class Bounds {
 		bCheck.setTanks(tanks);
 	}
 	
-	public void walls(HashSet<ObjectSerialize> walls) {
+	public void walls(ArrayList<ObjectSerialize> walls) {
 		Bounds.walls = walls;
 		tCheck.setWalls(walls);
 		bCheck.setWalls(walls);
@@ -64,4 +65,5 @@ public class Bounds {
 		tCheck.myID(id);
 		bCheck.myID(id);
 	}
+
 }

@@ -7,7 +7,11 @@ import javax.print.attribute.PrintServiceAttribute;
  * ObjectSerialize serializes all needed for information for every object needed in the game.
  */
 public class ObjectSerialize implements Serializable{
-    private String name;
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 13505695996255119L;
+	private String name;
     private int x;
     private int y;
     private int color;

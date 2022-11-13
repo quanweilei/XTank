@@ -1,21 +1,27 @@
 package Mazes;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
 
 import Serializer.ObjectSerialize;
 
 public class Maze implements MazeFactory {
 
-	private ArrayList<Integer[]> wallspawns;
+	private ArrayList<Integer[]> spawns;
+	private ArrayList<ObjectSerialize> wallObj;
 	
 	public Maze() {
-		wallspawns = new ArrayList<Integer[]>();
+		wallObj = new ArrayList<>();
+		spawns = new ArrayList<Integer[]>();
 		rGenerate();
 	}
 	@Override
 	public ArrayList<Integer[]> spawns() {
-		return wallspawns;
+		return spawns;
 	}
 
 	@Override
@@ -37,15 +43,16 @@ public class Maze implements MazeFactory {
 				wallpoints[2] = rand.nextInt(0, 1440);
 				wallpoints[3] = y;
 			}
-			wallspawns.add(wallpoints);
+			ObjectSerialize wall = new ObjectSerialize("wall", wallpoints[0], wallpoints[1], 0, 0, wallpoints[2], wallpoints[3], 0, 0, 0, 0);
+			
+			wallObj.add(wall);
 		}
 		//generate ints for wallpoints for each wall and add them to wallspawns
 	}
 
 	@Override
-	public ObjectSerialize walls() {
-		// TODO Auto-generated method stub
-		return null;
+	public ArrayList<ObjectSerialize> walls() {
+		return wallObj;
 	}
 
 }

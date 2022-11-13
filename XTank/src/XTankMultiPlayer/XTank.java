@@ -1,8 +1,11 @@
 package XTankMultiPlayer;
 
 import java.net.Socket;
+import java.util.ArrayList;
 
 import Mazes.Maze;
+import Serializer.ObjectSerialize;
+import Serializer.Serializer;
 import XTankUI.XTankUI;
 
 import java.io.DataInputStream;
@@ -20,10 +23,17 @@ public class XTank
         	DataInputStream in = new DataInputStream(socket.getInputStream());
         	DataOutputStream out = new DataOutputStream(socket.getOutputStream());
         	int id = in.read();
-        	
+        	Serializer ser = new Serializer();
         	// Fill Maze
+        	ArrayList<ObjectSerialize> walls = new ArrayList<>();
+        	ObjectSerialize mazeComp = ser.byteToOb(in.readNBytes(189));
+        	
+        	while (!mazeComp.name().equals("endw")) {
+        		walls.add(mazeComp);
+        		mazeComp = ser.byteToOb(in.readNBytes(189));
+        	}
 
-            var ui = new XTankUI(in, out, id);
+            var ui = new XTankUI(in, out, id, walls);
         }
     
     }

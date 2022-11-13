@@ -31,13 +31,14 @@ public class XTankServer
 	static ArrayList<DataOutputStream> sq;
     private static Serializer ser;
     private static volatile HashMap<Integer, ObjectSerialize> tanks;
-    private static Maze walls;
+    private static Maze maze;
     private static HashMap<Socket, Integer> sockets;
     // TODO: implement different spawning, will be done with maze generation
     private static ArrayList<Integer[]> spawnable;
     
     private static volatile ObjectSerialize reset;
     private static ObjectSerialize started;
+    private static ObjectSerialize endwall;
     private static Random random;
     private static ExecutorService pool;
     
@@ -48,7 +49,9 @@ public class XTankServer
         ser = Serializer.getInstance();
         tanks = new HashMap<>();
         spawnable = new ArrayList<>();
-        walls = new Maze();
+        
+        maze = new Maze();
+        
         sockets = new HashMap<>();
         random = new Random();
         // Temporary spawns
@@ -67,6 +70,8 @@ public class XTankServer
         reset = new ObjectSerialize("null", -1, - 1, -1, -1, -1, -1, -1, -1, -1, 1);
         // start protocol
         started = new ObjectSerialize("plyr", -1, - 1, -1, -1, -1, -1, -1, -1, -1, 1);
+        endwall = new ObjectSerialize("endw", -1, - 1, -1, -1, -1, -1, -1, -1, -1, 1);
+        
         pool = Executors.newFixedThreadPool(20);
         
         try (var listener = new ServerSocket(59896)) 
@@ -90,6 +95,12 @@ public class XTankServer
                 {
                 	int id = getAvailableID();
                 	curr.getOutputStream().write(id);
+                	for (ObjectSerialize wall: maze.walls()) {
+                		curr.getOutputStream().write(ser.obToByte(wall));
+                	}
+                	curr.getOutputStream().write(ser.obToByte(endwall));
+                	curr.getOutputStream().flush();
+                	
                 	pool.execute(new XTankManager(curr, id));
                 }
             }

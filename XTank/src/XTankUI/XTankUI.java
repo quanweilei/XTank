@@ -14,6 +14,7 @@ import Serializer.Serializer;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -53,7 +54,7 @@ public class XTankUI
 
 	private HashMap<Integer, ObjectSerialize> tanks;
 	private static HashMap<Integer, ObjectSerialize> bullets;
-	private HashSet<ObjectSerialize> walls;
+	ArrayList<ObjectSerialize> walls;
 	
 	private boolean win;
 	private boolean loss;
@@ -63,8 +64,9 @@ public class XTankUI
 	private Maze maze;
 	
 	
-	public XTankUI(DataInputStream in, DataOutputStream out, int id) throws IOException, InterruptedException, ClassNotFoundException
+	public XTankUI(DataInputStream in, DataOutputStream out, int id, ArrayList<ObjectSerialize> walls) throws IOException, InterruptedException, ClassNotFoundException
 	{
+		this.walls = walls;
 		ended = false;
 		win = false;
 		loss = false;
@@ -74,6 +76,8 @@ public class XTankUI
 
 		tanks = new HashMap<>();
 		bullets = new HashMap<>();
+		
+		System.out.println(walls);
 		
 		reset();
 		
@@ -186,13 +190,11 @@ public class XTankUI
 				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
 			}
 			
-			/*
-			 * for (Integer[] wall: maze.spawns()) {
+			for (ObjectSerialize wall: walls) {
 				event.gc.setForeground(shell.getDisplay().getSystemColor(SWT.COLOR_BLUE));
-				event.gc.drawLine(wall[0], wall[1], wall[2], wall[3]);
+				event.gc.drawLine(wall.x(), wall.y(), wall.dirX(), wall.dirY());
 				event.gc.setForeground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
 			}
-			 */
 
 			
 			// Print out name tags
@@ -206,22 +208,6 @@ public class XTankUI
 				int midY = ((2 * curry + cHeight)/2) - 25;
 				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
 				event.gc.drawText("Player " + String.valueOf(id), midX, midY + cHeight);
-			}
-			
-			if (loss == true) {
-				Font font = new Font(display,"Arial",32,SWT.BOLD | SWT.ITALIC);
-				event.gc.setFont(font);
-				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
-				Rectangle c = canvas.getBounds();
-				event.gc.drawText("YOU DIED", c.width/2, c.height/2);
-			}
-			
-			if (win == true) {
-				Font font = new Font(display,"Arial",32,SWT.BOLD | SWT.ITALIC);
-				event.gc.setFont(font);
-				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
-				Rectangle c = canvas.getBounds();
-				event.gc.drawText("YOU WON!", c.width/2, c.height/2);
 			}
 		});	
 
@@ -486,6 +472,8 @@ public class XTankUI
 							if (obj.getStatus() <= 0) {
 								tanks.remove(obj.id());
 								if (tanks.size() == 1 && tanks.containsKey(id) && hp > 0) {
+									shell.setText("You Won!");
+									shell.update();
 									win = true;
 									canvas.redraw();
 								}
@@ -543,6 +531,8 @@ public class XTankUI
 				}
 				if (hp == 0) {
 					loss = true;
+					shell.setText("You Lost!");
+					shell.update();
 					tanks.remove(id);
 					ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height, hp);
 					try {
