@@ -25,8 +25,8 @@ import java.util.concurrent.TimeUnit;
 public class XTankUI
 {
 	// The location and direction of the "tank"
-	private int x = 1500;
-	private int y = 800;
+	private int x;
+	private int y;
 	private int directionX = 0;
 	private int directionY = -10;
 	private int color;
@@ -34,16 +34,20 @@ public class XTankUI
 	private int width;
 	private int height;
 	private int hp;
-	private int id;
+
+	private int hop;
+	private int start;
 	private static ObjectSerialize myStat;
+	private static int id = 0;
 
 	private static Canvas canvas;
+	private static Serializer ser = Serializer.getInstance();
 	private Display display;
+	private Shell shell;
 	
 	private DataInputStream in; 
 	private DataOutputStream out;
 
-	private Serializer ser;
 
 	private Command moveHandler;
 	private Firing fireHandler;
@@ -54,44 +58,37 @@ public class XTankUI
 	
 	private boolean win;
 	private boolean loss;
+	private boolean ended;
 	
 	private Bounds bounds;
 	
 	
-	public XTankUI(DataInputStream in, DataOutputStream out, int id, int start, int startx, int starty) throws IOException, InterruptedException
+	public XTankUI(DataInputStream in, DataOutputStream out, int id) throws IOException, InterruptedException, ClassNotFoundException
 	{
+		ended = false;
 		win = false;
 		loss = false;
-		System.out.println("This Client is Player " + id);
 		this.in = in;
 		this.out = out;
-		this.id = id;
-		x = startx;
-		y = starty;
-		color = SWT.COLOR_DARK_GREEN;
-		gun = SWT.COLOR_BLACK;
-		ser = Serializer.getInstance();
-		moveHandler = Movement.get();
-		fireHandler = (Firing) Firing.getInstance();
-		moveHandler.connect(this);
-		fireHandler.connect(this);
+		XTankUI.id = id;
 		tanks = new HashMap<>();
 		bullets = new HashMap<>();
+		
+		reset();
+		
+		color = SWT.COLOR_DARK_GREEN;
+		gun = SWT.COLOR_BLACK;
+		
 		width = 50;
 		height = 100;
-		bounds = Bounds.getInstance();
-		bounds.setBounds(967, 1904);
-		bounds.tanks(tanks);
-		bounds.walls(walls);
-		bounds.setID(id);
 		// TODO: OPTION FOR HP
 		hp = 3;
-		myStat = new ObjectSerialize("plyr", -1, -1, -1, -1, -1, -1, -1, -1, -1, start);
-		out.write(ser.obToByte(myStat));
+		hop = hp;
+
 		System.out.println("Sending out status");
 		display = new Display();
 		
-		if (myStat.getStatus() == 0) {
+		if (start == 0) {
 			this.waiting();
 		}
 		else {
@@ -100,11 +97,45 @@ public class XTankUI
 		//moveHandler = Movement.get();
 	}
 	
+	public void reset() throws IOException, ClassNotFoundException {
+        System.out.println("This Client is Player " + id);
+		ObjectSerialize temp = ser.byteToOb(in.readNBytes(189));
+		while (!temp.name().equals("plyr")) {
+			temp = ser.byteToOb(in.readNBytes(189));
+		}
+		start = temp.getStatus();
+		ObjectSerialize spawn = ser.byteToOb(in.readNBytes(189));
+		while (!spawn.name().equals("spwn")) {
+			spawn = ser.byteToOb(in.readNBytes(189));
+		}
+		int startx = spawn.x();
+        int starty = spawn.y();
+		x = startx;
+		y = starty;
+		directionX = 0;
+		directionY = -10;
+		tanks.clear();
+		bullets.clear();
+		hp = hop;
+		width = 50;
+		height = 100;
+		bounds = Bounds.getInstance();
+		bounds.setBounds(967, 1904);
+		bounds.tanks(tanks);
+		bounds.walls(walls);
+		bounds.setID(id);
+		moveHandler = Movement.get();
+		fireHandler = (Firing) Firing.getInstance();
+		moveHandler.connect(this);
+		fireHandler.connect(this);
+	}
+	
 	public void start() throws InterruptedException
 	{
 		Shell shell = new Shell(display);
 		shell.setText("xtank");
 		shell.setLayout(new FillLayout());
+		this.shell = shell;
 		
 		canvas = new Canvas(shell, SWT.NO_BACKGROUND);
 		
@@ -186,10 +217,9 @@ public class XTankUI
 
 		canvas.addMouseListener(new MouseListener() {
 			public void mouseDown(MouseEvent e) {
-				if (hp == 0) {
-					canvas.removeMouseListener(this);
+				if (ended == false || (win) || (loss)) {
+					fireHandler.set(e);
 				}
-				fireHandler.set(e);
 			}
 			public void mouseUp(MouseEvent e) {} 
 			public void mouseDoubleClick(MouseEvent e) {} 
@@ -197,26 +227,23 @@ public class XTankUI
 
 		canvas.addKeyListener(new KeyListener() {
 			public void keyPressed(KeyEvent e) {
-				if (hp == 0) {
-					canvas.removeKeyListener(this);
-				}
-				if ((e.character == 'f') || (e.character == 'F') || (e.character == ' ')){
-					fireHandler.set(e);
-				}
-				else {
-					moveHandler.set(e);
-					// update tank location
-					try {
-						ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height, hp);
-						out.write(ser.obToByte(bounds.check(obj)));
-						out.flush();
+				if ((ended == false) || (win) || (loss)){
+					if ((e.character == 'f') || (e.character == 'F') || (e.character == ' ')){
+						fireHandler.set(e);
 					}
-					catch(IOException ex) {
-						System.out.println("The server did not respond (write KL).");
+					else {
+						moveHandler.set(e);
+						// update tank location
+						try {
+							ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height, hp);
+							out.write(ser.obToByte(bounds.check(obj)));
+							out.flush();
+						}
+						catch(IOException ex) {
+							System.out.println("The server did not respond (write KL).");
+						}
 					}
 				}
-				
-				canvas.redraw();
 			}
 			public void keyReleased(KeyEvent e) {
 			}
@@ -253,12 +280,17 @@ public class XTankUI
 	 * Menu when waiting for players
 	 */
 	public void waiting() throws IOException, InterruptedException {
+		out.flush();
 		Shell start = new Shell(display);
 		start.setBounds(900 , 600, 400, 400);
 		start.setText("Waiting for Game to Start...");
 		settings(start);
 		Button button = new Button(start, SWT.PUSH);
 		button.setText("Start Game");
+		System.out.println("waiting...");
+		myStat = new ObjectSerialize("plyr", -1, -1, -1, -1, -1, -1, -1, -1, -1, this.start);
+		out.write(ser.obToByte(myStat));
+		out.flush();
 		button.addListener(SWT.Selection, new Listener() {
 
 			@Override
@@ -275,11 +307,18 @@ public class XTankUI
 			  try {
 				if (in.available() > 0) {
 					ObjectSerialize ob = ser.byteToOb(in.readNBytes(189));
-					myStat = ob;
-					System.out.println(ob);
+					if (ob.name().equals("plyr")) {
+						myStat = ob;
+						System.out.println(ob);
+					}
 				}
 				out.write(ser.obToByte(myStat));
+				out.flush();
 				if (myStat.getStatus() == 1) {
+					ended = false;
+					win = false;
+					loss = false;
+					System.out.println("Moving to Canvas");
 					start.dispose();;
 					start();
 					break;
@@ -415,11 +454,19 @@ public class XTankUI
 		public void run() 
 		{
 			try {
-				if (in.available() > 0)
+				if ((in.available() > 0) && (ended == false))
 				{
 					ObjectSerialize obj = ser.byteToOb(in.readNBytes(189));
 					System.out.println(obj);
-					if (!obj.name().equals("null")) {
+					if (obj.name().equals("endg")) {
+						ended = true;
+						System.out.println("Game ended");
+						start = 0;
+						shell.close();
+						reset();
+						waiting();
+					}
+					if (obj.name().equals("Tank") || (obj.name().equals("bull"))) {
 						if (obj.name().equals("Tank")) {
 							if (obj.id() == id) {
 								x = obj.x();
@@ -432,10 +479,14 @@ public class XTankUI
 									win = true;
 									canvas.redraw();
 								}
+								ObjectSerialize end = new ObjectSerialize("endg", color, color, color, color, color, color, color, color, color, color);
+								out.write(ser.obToByte(end));
+								out.flush();
 							}
 							else {
 								tanks.put(obj.id(), obj);
 							}
+							canvas.redraw();
 						}
 						
 						if ((obj.name().equals("bull"))) {
@@ -443,14 +494,15 @@ public class XTankUI
 						}
 					}
 					else {
-						System.out.println("Player " + obj.id() + " Disconnected");
-						tanks.remove(obj.id());
-
+						if (obj.name().equals("null")) {
+							System.out.println("Player " + obj.id() + " Disconnected");
+							tanks.remove(obj.id());
+							canvas.redraw();
+						}
 					}
-					canvas.redraw();
 				}
 			}
-			catch(IOException | ClassNotFoundException ex) {
+			catch(IOException | ClassNotFoundException | InterruptedException ex) {
 				System.out.println("The server did not respond (async).");
 			}
             display.timerExec(100, this);
@@ -461,40 +513,41 @@ public class XTankUI
     	
 		@Override
 		public void run() {
-			@SuppressWarnings("rawtypes")
-			Iterator bIt = new BulletIterator(bullets).iterator();
-			
-			while (bIt.hasNext()) {
-				ObjectSerialize curr = (ObjectSerialize) bIt.next();
-				curr.setXY(curr.x() + curr.dirX() * 2, curr.y() + curr.dirY() * 2);
-				bounds.check(curr);
-				if (curr.getStatus() == 0){
-					System.out.println("Removing Bullet: " + curr);
-					bullets.remove(curr.hashCode());
+			if (ended == false) {
+				@SuppressWarnings("rawtypes")
+				Iterator bIt = new BulletIterator(bullets).iterator();
+				
+				while (bIt.hasNext()) {
+					ObjectSerialize curr = (ObjectSerialize) bIt.next();
+					curr.setXY(curr.x() + curr.dirX() * 2, curr.y() + curr.dirY() * 2);
+					bounds.check(curr);
+					if (curr.getStatus() == 0){
+						System.out.println("Removing Bullet: " + curr);
+						bullets.remove(curr.hashCode());
 
+					}
+					if (curr.getStatus() == -1) {
+						bullets.remove(curr.hashCode());
+						hp--;
+					}
 				}
-				if (curr.getStatus() == -1) {
-					System.out.println("I was hit");
-					bullets.remove(curr.hashCode());
-					hp--;
+				if (hp == 0) {
+					loss = true;
+					tanks.remove(id);
+					ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height, hp);
+					try {
+						System.out.println("Sending out Object of Length: " + ser.obToByte(obj).length);
+						out.write(ser.obToByte(obj));
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 				}
-			}
-			if (hp == 0) {
-				loss = true;
-				tanks.remove(id);
-				ObjectSerialize obj = new ObjectSerialize("Tank", x, y, color, gun, directionX, directionY, id, width, height, hp);
-				try {
-					System.out.println("Sending out Object of Length: " + ser.obToByte(obj).length);
-					out.write(ser.obToByte(obj));
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
 
-			
-			canvas.redraw();
-			display.timerExec(100, this);
+				
+				canvas.redraw();
+				display.timerExec(100, this);
+			}
 		}
     	
     	

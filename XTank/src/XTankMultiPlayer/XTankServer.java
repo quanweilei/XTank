@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
@@ -35,9 +36,8 @@ public class XTankServer
     private static ArrayList<Integer[]> spawnable;
     private static volatile ObjectSerialize reset;
     private static ObjectSerialize started;
-    private static ObjectSerialize win;
-    private static ObjectSerialize loss;
     private static Random random;
+    private static ExecutorService pool;
     
     public static void main(String[] args) throws Exception 
     {
@@ -64,12 +64,8 @@ public class XTankServer
         // reset protocol, informs of leaving players
         reset = new ObjectSerialize("null", -1, - 1, -1, -1, -1, -1, -1, -1, -1, 1);
         // start protocol
-        started = new ObjectSerialize("strt", -1, - 1, -1, -1, -1, -1, -1, -1, -1, 1);
-        // win protocol
-        win = new ObjectSerialize("iWon", -1, - 1, -1, -1, -1, -1, -1, -1, -1, 9);
-        // loss protocol
-        loss = new ObjectSerialize("lost", -1, - 1, -1, -1, -1, -1, -1, -1, -1, 8);
-        var pool = Executors.newFixedThreadPool(20);
+        started = new ObjectSerialize("plyr", -1, - 1, -1, -1, -1, -1, -1, -1, -1, 1);
+        pool = Executors.newFixedThreadPool(20);
         
         try (var listener = new ServerSocket(59896)) 
         {
@@ -83,28 +79,21 @@ public class XTankServer
             	}
             	reset.setID(-1);
                 Socket curr = listener.accept();
-                int id = getAvailableID();
-                Integer[] spawn = randomSpawn();
                 
-                if ((id == -1) || (spawn == null)){
+                if ((tanks.size() > 20) || (spawnable.size() == 0)){
                     System.out.println("Too many players, denying connection");
                     curr.close();
                 }
                 else 
                 {
-                	System.out.println("Spawning Player " + id + " at " + String.valueOf(spawn[0]) + ", " + String.valueOf(spawn[1]));
-                    curr.getOutputStream().write(id);
-                    curr.getOutputStream().write(started.getStatus());
-                    sockets.put(curr, id);
-                    curr.getOutputStream().write(spawn[0]);
-                    curr.getOutputStream().write(spawn[1]);
-                    curr.getOutputStream().flush();
-                	pool.execute(new XTankManager(curr, id, spawn));
+                	int id = getAvailableID();
+                	curr.getOutputStream().write(id);
+                	pool.execute(new XTankManager(curr, id));
                 }
             }
         }
     }
-
+    
     private static class XTankManager implements Runnable 
     {
         private Socket socket;
@@ -114,76 +103,17 @@ public class XTankServer
         private Integer mySpawn[];
         private boolean left;
         
-        XTankManager(Socket socket, int id, Integer[] mySpawn) { this.socket = socket; this.id = id; mySers = new ArrayList<>(); this.mySpawn = mySpawn;}
+        XTankManager(Socket socket, int id) { this.socket = socket; mySers = new ArrayList<>(); this.id = id;}
 
 		@Override
-        public synchronized void run() 
+        public void run() 
         {
             System.out.println("Connected: " + socket);
             try 
-            {
-            	DataInputStream in = new DataInputStream(socket.getInputStream());
-            	DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-            	myStat = ser.byteToOb(in.readNBytes(189));
-            	mySers.add(out);
-                sq.add(out);
-                left = false;
-                tanks.put(id, null);
-                
-                while (true) {
-                	//System.out.println("Player " + id + " waiting");
-                	if (in.available() > 0) {
-                		myStat = ser.byteToOb(in.readNBytes(189));
-                	}
-                	if (started.getStatus() == 1) {
-                		myStat.setStatus(1);
-                		out.write(ser.obToByte(myStat));
-            			break;
-            		}
-                	if (myStat.getStatus() == 1) {
-                		started.setStatus(1);
-                		break;
-                	}
-                }
-                
-                
-                System.out.println("Player " + id + " in game");
-                while (true)
-                {
-        			ObjectSerialize obj = ser.byteToOb(in.readNBytes(189));
-        			System.out.println("Accepting Object: " + obj);
-        			//System.out.println(obj);
-                    if (obj.name().contains("Tank")) {
-                    	tanks.put(obj.id(), obj);
-                    	for (DataOutputStream o: sq) {
-                    		o.write(ser.obToByte(obj));
-                    	}
-                    }
-                    
-                    if (obj != null  && obj.name().equals("bull")) {
-            			for (DataOutputStream o: sq) {
-            				o.write(ser.obToByte(obj));
-            			}
-            		}
-                    
-            	
-                	for (DataOutputStream o: sq)
-                	{
-                        if (reset.id() != -1) {
-                        	System.out.println("LEFT");
-                        	o.write(ser.obToByte(reset));
-                        	o.flush();
-                        }
-
-                	}
-                	if (left == true) {
-                		reset.setID(-1);
-                		left = false;
-                	}
-                	Thread.sleep(100);
-            }
-                
-                
+            {	
+               while (execute()) {
+            	   
+               }
             } 
             catch (Exception e) 
             {
@@ -200,7 +130,99 @@ public class XTankServer
             }
         }
 		
-		public void leave() throws Exception {
+		private boolean execute() throws ClassNotFoundException, IOException, InterruptedException {
+        	sockets.put(socket, id);
+        	tanks.put(id, null);
+        	Integer[] mySpawn = randomSpawn();
+        	DataInputStream in = new DataInputStream(socket.getInputStream());
+        	DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+        	out.flush();
+            out.write(ser.obToByte(started));
+            System.out.println("Started Status sent to Client");
+            ObjectSerialize spawn = new ObjectSerialize("spwn", mySpawn[0], mySpawn[1], id, id, id, id, id, id, id, id);
+            out.write(ser.obToByte(spawn));
+            System.out.println("Spawn Location sent to Client");
+            out.flush();
+        	myStat = ser.byteToOb(in.readNBytes(189));
+        	mySers.add(out);
+            sq.add(out);
+            left = false;
+
+            
+            while (true) {
+            	
+            	if (in.available() > 0) {
+            		myStat = ser.byteToOb(in.readNBytes(189));
+            		System.out.println("Recieved Status: "+ myStat);
+            	}
+            	if (started.getStatus() == 1) {
+            		myStat.setStatus(1);
+            		out.write(ser.obToByte(myStat));
+            		System.out.println("Sending Status");
+            		out.flush();
+        			break;
+        		}
+            	if (myStat.getStatus() == 1) {
+            		started.setStatus(1);
+            	}
+            }
+            
+            
+            System.out.println("Player " + id + " in game");
+            while (true)
+            {
+    			ObjectSerialize obj = ser.byteToOb(in.readNBytes(189));
+    			System.out.println(obj);
+    			if (obj.name().equals("endg")) {
+    				Thread.sleep(3000 + id * 40);
+    				started.setStatus(0);
+    				spawnable.add(mySpawn);
+    				tanks.clear();
+    				System.out.println("Ending the Game");
+    				for (DataOutputStream o :sq) {
+    					o.write(ser.obToByte(obj));
+    					o.flush();
+    				}
+    				sq.remove(out);
+    				out.flush();
+    				return true;
+    			}
+    			System.out.println("Accepting Object: " + obj);
+    			//System.out.println(obj);
+                if (obj.name().contains("Tank")) {
+                	tanks.put(obj.id(), obj);
+                	for (DataOutputStream o: sq) {
+                		o.write(ser.obToByte(obj));
+                	}
+                }
+                
+                if (obj != null  && obj.name().equals("bull")) {
+        			for (DataOutputStream o: sq) {
+        				o.write(ser.obToByte(obj));
+        			}
+        		}
+                
+        	
+            	for (DataOutputStream o: sq)
+            	{
+                    if (reset.id() != -1) {
+                    	System.out.println("LEFT");
+                    	o.write(ser.obToByte(reset));
+                    	o.flush();
+                    }
+
+            	}
+            	if (left == true) {
+            		reset.setID(-1);
+            		left = false;
+            	}
+            	Thread.sleep(150);
+            }
+
+            
+		}
+		
+		private void leave() throws Exception {
 			try { spawnable.add(mySpawn); sockets.remove(socket); reset.setID(id); tanks.remove(id); sq.removeAll(mySers); socket.close(); } 
             catch (Exception e) {}
             System.out.println("Closed: " + socket);
@@ -210,6 +232,8 @@ public class XTankServer
             }
 		}
     }
+    
+    
 
     private static int getAvailableID() {
         for (int i = 1; i < 21; i++) {

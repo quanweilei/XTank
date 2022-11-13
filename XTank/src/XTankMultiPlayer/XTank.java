@@ -15,15 +15,8 @@ public class XTank
         {
         	DataInputStream in = new DataInputStream(socket.getInputStream());
         	DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-            int id = in.read();
-            if (id == -1) {
-            	System.out.println("ERROR: Game Full, Join at another time");
-            	return;
-            }
-            int start = in.read();
-            int startx = in.read();
-            int starty = in.read();
-            var ui = new XTankUI(in, out, id, start,startx, starty);
+        	int id = in.read();
+            var ui = new XTankUI(in, out, id);
         }
     
     }
