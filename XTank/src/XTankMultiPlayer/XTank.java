@@ -2,6 +2,7 @@ package XTankMultiPlayer;
 
 import java.net.Socket;
 
+import Mazes.Maze;
 import XTankUI.XTankUI;
 
 import java.io.DataInputStream;
@@ -23,7 +24,8 @@ public class XTank
             int start = in.read();
             int startx = in.read();
             int starty = in.read();
-            var ui = new XTankUI(in, out, id, start,startx, starty);
+            Maze maze = new Maze(); //soon change this to read from server instead
+            var ui = new XTankUI(in, out, id, start,startx, starty, maze);
         }
     
     }

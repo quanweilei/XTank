@@ -7,6 +7,7 @@ import org.eclipse.swt.layout.*;
 import org.eclipse.swt.widgets.*;
 
 import BoundCheck.Bounds;
+import Mazes.Maze;
 import Serializer.ObjectSerialize;
 import Serializer.Serializer;
 
@@ -56,9 +57,10 @@ public class XTankUI
 	private boolean loss;
 	
 	private Bounds bounds;
+	private Maze maze;
 	
 	
-	public XTankUI(DataInputStream in, DataOutputStream out, int id, int start, int startx, int starty) throws IOException, InterruptedException
+	public XTankUI(DataInputStream in, DataOutputStream out, int id, int start, int startx, int starty, Maze maze) throws IOException, InterruptedException
 	{
 		win = false;
 		loss = false;
@@ -68,6 +70,7 @@ public class XTankUI
 		this.id = id;
 		x = startx;
 		y = starty;
+		this.maze = maze;
 		color = SWT.COLOR_DARK_GREEN;
 		gun = SWT.COLOR_BLACK;
 		ser = Serializer.getInstance();
@@ -152,6 +155,12 @@ public class XTankUI
 				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
 				event.gc.fillOval(midX + cDirX*9 + 25, midY + cDirY*9 + 25, 10, 10);
 				event.gc.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
+			}
+			
+			for (Integer[] wall: maze.spawns()) {
+				event.gc.setForeground(shell.getDisplay().getSystemColor(SWT.COLOR_BLUE));
+				event.gc.drawLine(wall[0], wall[1], wall[2], wall[3]);
+				event.gc.setForeground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
 			}
 			
 			// Print out name tags
